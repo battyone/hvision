@@ -1,39 +1,28 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
 	<parent>
 		<groupId>com.emadbarsoum</groupId>
 		<artifactId>hvision</artifactId>
 		<version>0.1</version>
+        <relativePath>../pom.xml</relativePath>
 	</parent>
 
-	<groupId>com.emadbarsoum</groupId>
-	<artifactId>hvision-common</artifactId>
-    <version>0.1</version>
-	<packaging>jar</packaging>
+    <artifactId>hvision-core</artifactId>
+    <name>HVision Core</name>
+    <description>Scalable Computer Vision Algorithms</description>
 
-	<name>hvision-common</name>
-	<url>http://maven.apache.org</url>
+    <packaging>jar</packaging>
 
 	<properties>
         <!-- Platform encoding override -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
-
-    <build>
-        <directory>target</directory>
-        <outputDirectory>target/classes</outputDirectory>
-        <finalName>${project.artifactId}-${project.version}</finalName>
-        <sourceDirectory>src</sourceDirectory>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 
 	<dependencies>
 		<dependency>
@@ -61,8 +50,8 @@
 			<artifactId>hadoop-mapreduce-client-jobclient</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
 		</dependency>			
 	</dependencies>
 </project>
