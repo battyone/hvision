@@ -14,13 +14,13 @@ import org.apache.hadoop.io.Text;
  * com.emadbarsoum.format.SequenceFilesFromImages
  *
  */
-public class SequenceFilesFromImages
+public class SequenceFileFromImages
 {
     public static void main(String[] args) throws Exception
     {
         if (args.length != 2)
         {
-            System.err.println("Usage: SequenceFilesFromImages <input path to folder of images> <output path for sequence file>");
+            System.err.println("Usage: SequenceFileFromImages <input path to folder of images> <output path for sequence file>");
             System.exit(2);
         }
 
