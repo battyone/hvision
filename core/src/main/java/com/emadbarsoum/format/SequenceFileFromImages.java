@@ -11,7 +11,7 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 
 /**
- * com.emadbarsoum.format.SequenceFilesFromImages
+ * com.emadbarsoum.format.SequenceFileFromImages
  *
  */
 public class SequenceFileFromImages

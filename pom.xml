@@ -39,7 +39,7 @@
         <javacv.version>0.9</javacv.version>
         <hadoop.version>2.5.0</hadoop.version>
         <mavenCompilerPlugin.version>3.1</mavenCompilerPlugin.version>
-        <guava.version>16.0</guava.version>
+        <guava.version>14.0</guava.version>
     </properties>
 
     <modules>
