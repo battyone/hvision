@@ -37,19 +37,19 @@ public class Thumbnail extends Configured implements Tool
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
-            /*
             IplImage sourceImage = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
             // TODO: take the size as input.
             IplImage targetImage = IplImage.create(120, 120, sourceImage.depth(), sourceImage.nChannels());
 
             cvResize(sourceImage, targetImage);
-            CvMat targetImageMat = cvEncodeImage("jpg", targetImage); // TODO: use same extension as input file.
-            */
+            CvMat targetImageMat = cvEncodeImage(".jpg", targetImage); // TODO: use same extension as input file.
 
             // Write the result...
-            context.write(key, new BytesWritable(value.getBytes()));
+            byte[] data = new byte[targetImageMat.size()];
+            targetImageMat.getByteBuffer().get(data);
+            context.write(key, new BytesWritable(data));
 
-            //cvReleaseImage(targetImage);
+            cvReleaseImage(targetImage);
         }
     }
 

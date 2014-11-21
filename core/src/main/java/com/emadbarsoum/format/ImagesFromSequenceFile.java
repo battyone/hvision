@@ -10,6 +10,12 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 
+import org.bytedeco.javacv.*;
+import org.bytedeco.javacpp.*;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_highgui.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
+
 /**
  * com.emadbarsoum.format.ImagesFromSequenceFile
  *

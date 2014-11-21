@@ -37,6 +37,7 @@
         <java.targetVersion>1.7</java.targetVersion>
         <junit.version>4.8.2</junit.version>
         <javacv.version>0.9</javacv.version>
+        <javacpp.version>0.9</javacpp.version>
         <hadoop.version>2.5.0</hadoop.version>
         <mavenCompilerPlugin.version>3.1</mavenCompilerPlugin.version>
         <guava.version>14.0</guava.version>
@@ -99,6 +100,16 @@
 				<artifactId>javacv</artifactId>
 				<version>${javacv.version}</version>
 			</dependency>
+            <dependency>
+                <groupId>org.bytedeco</groupId>
+                <artifactId>javacpp</artifactId>
+                <version>${javacpp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bytedeco.javacpp-presets</groupId>
+                <artifactId>opencv</artifactId>
+                <version>2.4.9-${javacpp.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
