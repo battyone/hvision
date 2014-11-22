@@ -12,7 +12,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
@@ -66,7 +65,6 @@ public class Thumbnail extends Configured implements Tool
 
         // Input Output format
         job.setInputFormatClass(SequenceFileInputFormat.class);
-        //job.setOutputFormatClass(NullOutputFormat.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
         job.setOutputKeyClass(Text.class);
