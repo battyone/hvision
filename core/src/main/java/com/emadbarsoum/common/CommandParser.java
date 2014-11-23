@@ -4,7 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A small command line parser.
+ * A small command line parser that support named value argument and named only argument
+ * in the following format: <cmd> -name1 value1 -name2 value2 -name3
  */
 public class CommandParser
 {
@@ -31,6 +32,11 @@ public class CommandParser
         return this.nameValueArgs.get(name);
     }
 
+    public int getAsInt(String name)
+    {
+        return Integer.parseInt(this.nameValueArgs.get(name));
+    }
+
     public boolean parse()
     {
         int index = 0;
@@ -42,12 +48,15 @@ public class CommandParser
                 String name = this.args[index].substring(1).toLowerCase();
 
                 ++index;
-                if (index >= this.args.length)
+                if ((index >= this.args.length) || this.args[index].startsWith("-"))
                 {
-                    return false;
+                    this.nameValueArgs.put(name, null);
+                    --index;
                 }
-
-                this.nameValueArgs.put(name, this.args[index]);
+                else
+                {
+                    this.nameValueArgs.put(name, this.args[index]);
+                }
             }
             else
             {

@@ -2,6 +2,8 @@ package com.emadbarsoum.map;
 
 import java.io.IOException;
 
+import com.emadbarsoum.common.CommandParser;
+import com.emadbarsoum.common.MetadataParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -36,19 +38,43 @@ public class Thumbnail extends Configured implements Tool
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
-            IplImage sourceImage = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-            // TODO: take the size as input.
-            IplImage targetImage = IplImage.create(120, 120, sourceImage.depth(), sourceImage.nChannels());
+            Configuration conf = context.getConfiguration();
 
-            cvResize(sourceImage, targetImage);
-            CvMat targetImageMat = cvEncodeImage(".jpg", targetImage); // TODO: use same extension as input file.
+            MetadataParser metadata = new MetadataParser(key.toString());
+            metadata.parse();
 
-            // Write the result...
-            byte[] data = new byte[targetImageMat.size()];
-            targetImageMat.getByteBuffer().get(data);
-            context.write(key, new BytesWritable(data));
+            int size = conf.getInt("size", 120);
+            int w = size;
+            int h = size;
 
-            cvReleaseImage(targetImage);
+            if (metadata.has("type") && metadata.get("type").equals("raw"))
+            {
+                //TODO: Add raw processing.
+            }
+            else
+            {
+                IplImage sourceImage = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+                if (sourceImage.width() > sourceImage.height())
+                {
+                    h = (w * sourceImage.height()) / sourceImage.width();
+                }
+                else
+                {
+                    w = (h * sourceImage.width()) / sourceImage.height();
+                }
+
+                IplImage targetImage = IplImage.create(w, h, sourceImage.depth(), sourceImage.nChannels());
+
+                cvResize(sourceImage, targetImage);
+                CvMat targetImageMat = cvEncodeImage(".jpg", targetImage); // TODO: use same extension as input file.
+
+                // Write the result...
+                byte[] data = new byte[targetImageMat.size()];
+                targetImageMat.getByteBuffer().get(data);
+                context.write(key, new BytesWritable(data));
+
+                cvReleaseImage(targetImage);
+            }
         }
     }
 
@@ -56,6 +82,10 @@ public class Thumbnail extends Configured implements Tool
     public final int run(final String[] args) throws Exception
     {
         Configuration conf = this.getConf();
+        CommandParser parser = new CommandParser(args);
+        parser.parse();
+
+        conf.set("size", parser.get("size"));
 
         Job job = Job.getInstance(conf, "Thumbnail Creation");
         job.setJarByClass(Thumbnail.class);
@@ -70,8 +100,8 @@ public class Thumbnail extends Configured implements Tool
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(BytesWritable.class);
 
-        FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileInputFormat.addInputPath(job, new Path(parser.get("i")));
+        FileOutputFormat.setOutputPath(job, new Path(parser.get("o")));
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;
@@ -79,8 +109,23 @@ public class Thumbnail extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
-        Configuration conf = new Configuration();
-        //conf.set("mapreduce.framework.name", "local");
-        ToolRunner.run(conf, new Thumbnail(), args);
+        CommandParser parser = new CommandParser(args);
+        if (!parser.parse()                 ||
+            (parser.getNumberOfArgs() != 3) ||
+            !(parser.has("i") &&
+              parser.has("o") &&
+              parser.has("size") &&
+              (parser.getAsInt("size") > 0)))
+        {
+            showUsage();
+            System.exit(2);
+        }
+
+        ToolRunner.run(new Configuration(), new Thumbnail(), args);
+    }
+
+    private static void showUsage()
+    {
+        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -size <resolution>");
     }
 }

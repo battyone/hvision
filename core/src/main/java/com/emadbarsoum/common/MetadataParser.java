@@ -27,6 +27,11 @@ public class MetadataParser
         return this.nameValues.get(name);
     }
 
+    public int getAsInt(String name)
+    {
+        return Integer.parseInt(this.nameValues.get(name));
+    }
+
     public void parse() throws InvalidPropertiesFormatException
     {
         String[] nameValueArray = this.metadata.split(";");

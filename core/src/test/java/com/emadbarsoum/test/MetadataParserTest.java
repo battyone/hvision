@@ -53,6 +53,27 @@ public class MetadataParserTest extends TestCase
 
     /**
      */
+    public void testValidIntMetadata()
+    {
+        MetadataParser parser = new MetadataParser("w=640;h=480");
+
+        try
+        {
+            parser.parse();
+
+            assertTrue(parser.has("w"));
+            assertTrue(parser.has("h"));
+            assertTrue(parser.getAsInt("w") == 640);
+            assertTrue(parser.getAsInt("h") == 480);
+        }
+        catch (InvalidPropertiesFormatException e)
+        {
+            assertTrue(false);
+        }
+    }
+
+    /**
+     */
     public void testInvalidMetadata()
     {
         MetadataParser parser = new MetadataParser("x;y=2");

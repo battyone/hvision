@@ -12,11 +12,8 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
 
-import org.bytedeco.javacv.*;
-import org.bytedeco.javacpp.*;
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  * A simple command line tool that convert all images in a given folder into Hadoop sequence file.
@@ -27,14 +24,20 @@ public class SequenceFileFromImages
 {
     public static void main(String[] args) throws Exception
     {
-        boolean compressed = false;
+        boolean compressed = true;
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 2) ||
+            (parser.getNumberOfArgs() < 2)  ||
             !(parser.has("i") && parser.has("o")))
         {
             showUsage();
             System.exit(2);
+        }
+
+        // Should we store the images uncompressed in the sequence file.
+        if (parser.has("raw"))
+        {
+            compressed = false;
         }
 
         Configuration conf = new Configuration();
@@ -74,7 +77,12 @@ public class SequenceFileFromImages
         {
             if (file.isFile() && !file.isHidden())
             {
-                byte[] fileData = null;
+                int width = 0;
+                int height = 0;
+                int channelCount = 0;
+                int depth = 0;
+                byte[] fileData;
+
                 if (compressed)
                 {
                     fileData = Files.toByteArray(file);
@@ -83,6 +91,11 @@ public class SequenceFileFromImages
                 {
                     IplImage image = cvLoadImage(file.getAbsolutePath());
 
+                    width = image.width();
+                    height = image.height();
+                    channelCount = image.nChannels();
+                    depth = image.depth();
+
                     ByteBuffer byteBuffer = image.getByteBuffer();
                     fileData = new byte[byteBuffer.capacity()];
                     byteBuffer.get(fileData);
@@ -90,7 +103,24 @@ public class SequenceFileFromImages
                     cvReleaseImage(image);
                 }
 
-                writer.append(new Text(file.getName()), new BytesWritable(fileData));
+                String name;
+                String extension;
+                String fileName = file.getName();
+                String metadata;
+
+                int pos = fileName.lastIndexOf(".");
+                if (pos > 0)
+                {
+                    name = fileName.substring(0, pos);
+                    extension = fileName.substring(pos + 1, fileName.length()).toLowerCase();
+                    metadata = "name=" + name + ";ext=" + extension;
+                    if (!compressed)
+                    {
+                        metadata += ";type=raw" + ";width=" + width + ";height=" + height + ";channel_count=" + channelCount + ";depth=" + depth;
+                    }
+
+                    writer.append(new Text(metadata), new BytesWritable(fileData));
+                }
             }
         }
 
@@ -99,6 +129,6 @@ public class SequenceFileFromImages
 
     private static void showUsage()
     {
-        System.err.println("Usage: SequenceFileFromImages -i <input path to folder of images> -o <output path for sequence file>");
+        System.out.println("Usage: SequenceFileFromImages -i <input path to folder of images> -o <output path for sequence file> [-raw]");
     }
 }

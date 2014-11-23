@@ -30,17 +30,47 @@ public class CommandParserTest extends TestCase
 
     /**
      */
-    public void testValidArguments()
+    public void testValidNamedValueArguments()
     {
         String[] args = {"-i", "/usr/local", "-o", "/usr/local/tmp"};
         CommandParser parser = new CommandParser(args);
 
-        parser.parse();
+        assertTrue(parser.parse());
 
         assertTrue(parser.has("i"));
         assertTrue(parser.has("o"));
         assertTrue(parser.get("i").equals("/usr/local"));
         assertTrue(parser.get("o").equals("/usr/local/tmp"));
+    }
+
+    /**
+     */
+    public void testValidNamedArguments()
+    {
+        String[] args = {"-i", "-o"};
+        CommandParser parser = new CommandParser(args);
+
+        assertTrue(parser.parse());
+
+        assertTrue(parser.has("i"));
+        assertTrue(parser.has("o"));
+        assertNull(parser.get("i"));
+        assertNull(parser.get("o"));
+    }
+
+    /**
+     */
+    public void testValidIntArguments()
+    {
+        String[] args = {"-w", "640", "-h", "480"};
+        CommandParser parser = new CommandParser(args);
+
+        assertTrue(parser.parse());
+
+        assertTrue(parser.has("w"));
+        assertTrue(parser.has("h"));
+        assertTrue(parser.getAsInt("w") == 640);
+        assertTrue(parser.getAsInt("h") == 480);
     }
 
     /**
