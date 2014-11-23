@@ -26,14 +26,14 @@ import static org.bytedeco.javacpp.opencv_highgui.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * com.emadbarsoum.map.Thumbnail
+ * com.emadbarsoum.map.Gaussian
  *
  */
-public class Thumbnail extends Configured implements Tool
+public class Gaussian extends Configured implements Tool
 {
     private static final Logger log = LoggerFactory.getLogger(Thumbnail.class);
 
-    public static class ThumbnailMapper extends Mapper<Text, BytesWritable, Text, BytesWritable>
+    public static class GaussianMapper extends Mapper<Text, BytesWritable, Text, BytesWritable>
     {
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
@@ -43,9 +43,8 @@ public class Thumbnail extends Configured implements Tool
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
-            int size = conf.getInt("size", 120);
-            int w = size;
-            int h = size;
+            int size = conf.getInt("size", 3);
+            double sigma = conf.getDouble("sigma", 1.0);
 
             if (metadata.has("type") && metadata.get("type").equals("raw"))
             {
@@ -53,29 +52,19 @@ public class Thumbnail extends Configured implements Tool
             }
             else
             {
-                IplImage sourceImage = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-                if (sourceImage.width() > sourceImage.height())
-                {
-                    h = (w * sourceImage.height()) / sourceImage.width();
-                }
-                else
-                {
-                    w = (h * sourceImage.width()) / sourceImage.height();
-                }
+                IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
 
-                IplImage targetImage = IplImage.create(w, h, sourceImage.depth(), sourceImage.nChannels());
+                cvSmooth(image, image, CV_GAUSSIAN, size, size, sigma, sigma);
 
-                cvResize(sourceImage, targetImage);
-                CvMat targetImageMat = cvEncodeImage("." + metadata.get("ext"), targetImage);
+                CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), image);
 
                 // Write the result...
-                byte[] data = new byte[targetImageMat.size()];
-                targetImageMat.getByteBuffer().get(data);
+                byte[] data = new byte[imageMat.size()];
+                imageMat.getByteBuffer().get(data);
                 context.write(key, new BytesWritable(data));
 
-                // cvReleaseMat(targetImageMat);
-                // cvReleaseImage(targetImage);
-                // cvReleaseImage(sourceImage);
+                cvReleaseMat(imageMat);
+                cvReleaseImage(image);
             }
         }
     }
@@ -88,11 +77,12 @@ public class Thumbnail extends Configured implements Tool
         parser.parse();
 
         conf.set("size", parser.get("size"));
+        conf.set("sigma", parser.get("sigma"));
 
-        Job job = Job.getInstance(conf, "Thumbnail Creation");
-        job.setJarByClass(Thumbnail.class);
+        Job job = Job.getInstance(conf, "Gaussian Blur");
+        job.setJarByClass(Gaussian.class);
 
-        job.setMapperClass(ThumbnailMapper.class);
+        job.setMapperClass(GaussianMapper.class);
         job.setNumReduceTasks(0);
 
         // Input Output format
@@ -111,21 +101,27 @@ public class Thumbnail extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
-        String[] nonOptional = {"i", "o", "size"};
+        String[] nonOptional = {"i", "o", "size", "sigma"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 3) ||
+            (parser.getNumberOfArgs() != 4) ||
             !(parser.has(nonOptional)))
         {
             showUsage();
             System.exit(2);
         }
 
-        ToolRunner.run(new Configuration(), new Thumbnail(), args);
+        if (parser.getAsInt("size") < 3)
+        {
+            showUsage();
+            System.exit(2);
+        }
+
+        ToolRunner.run(new Configuration(), new Gaussian(), args);
     }
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -size <resolution>");
+        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -size <kernel size> -sigma <gaussian sigma>");
     }
 }

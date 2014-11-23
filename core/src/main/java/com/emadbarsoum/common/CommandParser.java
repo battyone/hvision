@@ -27,6 +27,19 @@ public class CommandParser
         return this.nameValueArgs.containsKey(name);
     }
 
+    public boolean has(String[] names)
+    {
+        for (String name : names)
+        {
+            if (!has(name))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public String get(String name)
     {
         return this.nameValueArgs.get(name);
@@ -35,6 +48,11 @@ public class CommandParser
     public int getAsInt(String name)
     {
         return Integer.parseInt(this.nameValueArgs.get(name));
+    }
+
+    public double getAsDouble(String name)
+    {
+        return Double.parseDouble(this.nameValueArgs.get(name));
     }
 
     public boolean parse()
