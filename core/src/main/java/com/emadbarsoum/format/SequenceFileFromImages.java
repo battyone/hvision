@@ -101,6 +101,7 @@ public class SequenceFileFromImages
                     byteBuffer.get(fileData);
 
                     cvReleaseImage(image);
+                    image = null;
                 }
 
                 String name;

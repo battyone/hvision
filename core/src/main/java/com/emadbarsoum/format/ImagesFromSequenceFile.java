@@ -90,6 +90,7 @@ public class ImagesFromSequenceFile
                 out.close();
 
                 cvReleaseMat(imageMat);
+                imageMat = null;
             }
             else
             {
@@ -102,6 +103,7 @@ public class ImagesFromSequenceFile
         if (image != null)
         {
             cvReleaseImage(image);
+            image = null;
         }
 
         reader.close();

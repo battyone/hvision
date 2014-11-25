@@ -1,16 +1,20 @@
-package com.emadbarsoum.map;
+package com.emadbarsoum.mapreduce;
 
 import java.io.IOException;
+import java.net.URI;
 
 import com.emadbarsoum.common.CommandParser;
 import com.emadbarsoum.common.MetadataParser;
+import com.emadbarsoum.lib.ImageSimilarity;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -26,25 +30,27 @@ import static org.bytedeco.javacpp.opencv_highgui.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * com.emadbarsoum.map.Gaussian
+ * A MapReduce task, that takes an input image and a sequence file that is composed of a database of images.
+ * And it returns the same sequence file with its image sorted in such a way that the top ones are closed in similarity
+ * to the input image.
+ *
+ * com.emadbarsoum.mapreduce.ImageSearch
  *
  */
-public class Gaussian extends Configured implements Tool
+public class ImageSearch extends Configured implements Tool
 {
-    private static final Logger log = LoggerFactory.getLogger(Gaussian.class);
+    private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
 
-    public static class GaussianMapper extends Mapper<Text, BytesWritable, Text, BytesWritable>
+    public static class ImageSearchMapper extends Mapper<Text, BytesWritable, DoubleWritable, Text>
     {
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
             Configuration conf = context.getConfiguration();
+            ImageSimilarity imageSimilarity = new ImageSimilarity();
 
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
-
-            int size = conf.getInt("size", 3);
-            double sigma = conf.getDouble("sigma", 1.0);
 
             if (metadata.has("type") && metadata.get("type").equals("raw"))
             {
@@ -53,18 +59,31 @@ public class Gaussian extends Configured implements Tool
             else
             {
                 IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+                URI[] uriPaths = context.getCacheFiles();
 
-                cvSmooth(image, image, CV_GAUSSIAN, size, size, sigma, sigma);
+                String queryImagePath = uriPaths[0].getPath();
+                IplImage queryImage = cvLoadImage(queryImagePath);
 
-                CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), image);
+                double distance = imageSimilarity.computeDistance(image, queryImage);
+                context.write(new DoubleWritable(distance), key);
 
-                // Write the result...
-                byte[] data = new byte[imageMat.size()];
-                imageMat.getByteBuffer().get(data);
-                context.write(key, new BytesWritable(data));
-
-                cvReleaseMat(imageMat);
                 cvReleaseImage(image);
+                cvReleaseImage(queryImage);
+
+                image = null;
+                queryImage = null;
+            }
+        }
+    }
+
+    public static class ImageSearchReducer extends Reducer<DoubleWritable, Text, DoubleWritable, Text>
+    {
+        @Override
+        public void reduce(DoubleWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException
+        {
+            for (Text val : values)
+            {
+                context.write(key, val);
             }
         }
     }
@@ -76,24 +95,23 @@ public class Gaussian extends Configured implements Tool
         CommandParser parser = new CommandParser(args);
         parser.parse();
 
-        conf.set("size", parser.get("size"));
-        conf.set("sigma", parser.get("sigma"));
+        Job job = Job.getInstance(conf, "Image Search");
+        job.setJarByClass(ImageSearch.class);
 
-        Job job = Job.getInstance(conf, "Gaussian Blur");
-        job.setJarByClass(Gaussian.class);
-
-        job.setMapperClass(GaussianMapper.class);
-        job.setNumReduceTasks(0);
+        job.setMapperClass(ImageSearchMapper.class);
+        job.setCombinerClass(ImageSearchReducer.class);
+        job.setReducerClass(ImageSearchReducer.class);
 
         // Input Output format
         job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(BytesWritable.class);
+        job.setOutputKeyClass(DoubleWritable.class);
+        job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(parser.get("i")));
         FileOutputFormat.setOutputPath(job, new Path(parser.get("o")));
+        job.addCacheFile(new Path(parser.get("q")).toUri());
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;
@@ -101,27 +119,21 @@ public class Gaussian extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
-        String[] nonOptional = {"i", "o", "size", "sigma"};
+        String[] nonOptional = {"i", "o", "q"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 4) ||
+            (parser.getNumberOfArgs() != 3) ||
             !(parser.has(nonOptional)))
         {
             showUsage();
             System.exit(2);
         }
 
-        if (parser.getAsInt("size") < 3)
-        {
-            showUsage();
-            System.exit(2);
-        }
-
-        ToolRunner.run(new Configuration(), new Gaussian(), args);
+        ToolRunner.run(new Configuration(), new ImageSearch(), args);
     }
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -size <kernel size> -sigma <gaussian sigma>");
+        System.out.println("Arguments: -i <input path of the sequence file> -q <query image> -o <output path for the result>");
     }
 }
