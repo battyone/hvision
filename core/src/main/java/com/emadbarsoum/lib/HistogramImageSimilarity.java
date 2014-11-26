@@ -7,21 +7,31 @@ import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * ImageSimilarity compute similarity between 2 images using various algorithms.
+ * HistogramImageSimilarity compute similarity between 2 images using histogram.
  */
-public class ImageSimilarity
+public class HistogramImageSimilarity
 {
-    public double computeDistance(IplImage image1, IplImage image2)
+    private int numberOfBins = 128;
+
+    public int getNumberOfBins()
     {
-        return computeHistogramDistance(image1, image2, 128);
+        return this.numberOfBins;
     }
 
-    private double computeHistogramDistance(IplImage image1, IplImage image2, int numberOfBins)
+    public void setNumberOfBins(int numberOfBins)
+    {
+        this.numberOfBins = numberOfBins;
+    }
+
+    public HistogramImageSimilarity()
+    {}
+
+    public double computeDistance(IplImage image1, IplImage image2)
     {
         float minRange = 0.0f;
         float maxRange = 255.0f;
         int dims = 1;
-        int[] sizes = new int[]{numberOfBins};
+        int[] sizes = new int[]{this.numberOfBins};
         int histType = CV_HIST_ARRAY;
         float[] minMax = new float[]{minRange, maxRange};
         float[][] ranges = new float[][]{minMax};

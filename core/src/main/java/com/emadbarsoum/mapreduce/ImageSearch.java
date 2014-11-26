@@ -30,6 +30,7 @@ import static org.bytedeco.javacpp.opencv_highgui.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
+ *
  * A MapReduce task, that takes an input image and a sequence file that is composed of a database of images.
  * And it returns the same sequence file with its image sorted in such a way that the top ones are closed in similarity
  * to the input image.
@@ -52,26 +53,29 @@ public class ImageSearch extends Configured implements Tool
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
-            if (metadata.has("type") && metadata.get("type").equals("raw"))
+            URI[] uriPaths = context.getCacheFiles();
+            if (uriPaths.length > 0)
             {
-                //TODO: Add raw processing.
-            }
-            else
-            {
-                IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-                URI[] uriPaths = context.getCacheFiles();
+                if (metadata.has("type") && metadata.get("type").equals("raw"))
+                {
+                    //TODO: Add raw processing.
+                }
+                else
+                {
+                    IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+                    IplImage queryImage = cvLoadImage("queryImageFile");
 
-                String queryImagePath = uriPaths[0].getPath();
-                IplImage queryImage = cvLoadImage(queryImagePath);
+                    double distance = imageSimilarity.computeDistance(image, queryImage);
+                    context.write(new DoubleWritable(distance), key);
 
-                double distance = imageSimilarity.computeDistance(image, queryImage);
-                context.write(new DoubleWritable(distance), key);
+                    // System.out.format("%f, %s \n", distance, metadata.get("name"));
 
-                cvReleaseImage(image);
-                cvReleaseImage(queryImage);
+                    cvReleaseImage(image);
+                    cvReleaseImage(queryImage);
 
-                image = null;
-                queryImage = null;
+                    image = null;
+                    queryImage = null;
+                }
             }
         }
     }
@@ -111,7 +115,10 @@ public class ImageSearch extends Configured implements Tool
 
         FileInputFormat.addInputPath(job, new Path(parser.get("i")));
         FileOutputFormat.setOutputPath(job, new Path(parser.get("o")));
-        job.addCacheFile(new Path(parser.get("q")).toUri());
+
+        // Use symbolic link "queryImageFile" to support different platform formats
+        // and protocols.
+        job.addCacheFile(new URI(parser.get("q") + "#queryImageFile"));
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;
@@ -119,6 +126,8 @@ public class ImageSearch extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
+        Loader.load(opencv_nonfree.class);
+
         String[] nonOptional = {"i", "o", "q"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                 ||
