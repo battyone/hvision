@@ -9,7 +9,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 /**
  * HistogramImageSimilarity compute similarity between 2 images using histogram.
  */
-public class HistogramImageSimilarity
+public class HistogramImageSimilarity implements ImageSimilarity
 {
     private int numberOfBins = 128;
 

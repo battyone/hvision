@@ -5,7 +5,7 @@ import java.net.URI;
 
 import com.emadbarsoum.common.CommandParser;
 import com.emadbarsoum.common.MetadataParser;
-import com.emadbarsoum.lib.ImageSimilarity;
+import com.emadbarsoum.lib.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -40,7 +40,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  */
 public class ImageSearch extends Configured implements Tool
 {
-    private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
+    // private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
 
     public static class ImageSearchMapper extends Mapper<Text, BytesWritable, DoubleWritable, Text>
     {
@@ -48,7 +48,17 @@ public class ImageSearch extends Configured implements Tool
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
             Configuration conf = context.getConfiguration();
-            ImageSimilarity imageSimilarity = new ImageSimilarity();
+            ImageSimilarity imageSimilarity = null;
+            String method = conf.get("method");
+
+            if (method.equals("hist"))
+            {
+                imageSimilarity = new HistogramImageSimilarity();
+            }
+            else
+            {
+                imageSimilarity = new SurfImageSimilarity();
+            }
 
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
@@ -56,6 +66,7 @@ public class ImageSearch extends Configured implements Tool
             URI[] uriPaths = context.getCacheFiles();
             if (uriPaths.length > 0)
             {
+                String queryImagePath = uriPaths[0].getPath();
                 if (metadata.has("type") && metadata.get("type").equals("raw"))
                 {
                     //TODO: Add raw processing.
@@ -63,7 +74,7 @@ public class ImageSearch extends Configured implements Tool
                 else
                 {
                     IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-                    IplImage queryImage = cvLoadImage("queryImageFile");
+                    IplImage queryImage = cvLoadImage(queryImagePath); //"queryImageFile");
 
                     double distance = imageSimilarity.computeDistance(image, queryImage);
                     context.write(new DoubleWritable(distance), key);
@@ -99,16 +110,29 @@ public class ImageSearch extends Configured implements Tool
         CommandParser parser = new CommandParser(args);
         parser.parse();
 
+        if (parser.has("m"))
+        {
+            conf.set("method", parser.get("m"));
+        }
+        else
+        {
+            conf.set("method", "hist");
+        }
+
         Job job = Job.getInstance(conf, "Image Search");
         job.setJarByClass(ImageSearch.class);
 
         job.setMapperClass(ImageSearchMapper.class);
-        job.setCombinerClass(ImageSearchReducer.class);
+        // job.setCombinerClass(ImageSearchReducer.class);
         job.setReducerClass(ImageSearchReducer.class);
+        // job.setNumReduceTasks(0);
 
         // Input Output format
         job.setInputFormatClass(SequenceFileInputFormat.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        job.setMapOutputKeyClass(DoubleWritable.class);
+        job.setMapOutputValueClass(Text.class);
 
         job.setOutputKeyClass(DoubleWritable.class);
         job.setOutputValueClass(Text.class);
@@ -118,7 +142,8 @@ public class ImageSearch extends Configured implements Tool
 
         // Use symbolic link "queryImageFile" to support different platform formats
         // and protocols.
-        job.addCacheFile(new URI(parser.get("q") + "#queryImageFile"));
+        job.addCacheFile(new URI(parser.get("q")));
+        // job.addCacheFile(new URI(parser.get("q") + "#queryImageFile"));
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;
@@ -143,6 +168,6 @@ public class ImageSearch extends Configured implements Tool
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -q <query image> -o <output path for the result>");
+        System.out.println("Arguments: -i <input path of the sequence file> -q <query image> -o <output path for the result> [-m <hist or surf>]");
     }
 }

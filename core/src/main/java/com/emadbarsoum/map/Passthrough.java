@@ -39,7 +39,7 @@ public class Passthrough extends Configured implements Tool
         Configuration conf = this.getConf();
 
         Job job = Job.getInstance(conf, "Passthrough");
-        job.setJarByClass(Thumbnail.class);
+        job.setJarByClass(Passthrough.class);
 
         job.setMapperClass(PassthroughMapper.class);
         job.setNumReduceTasks(0);
