@@ -34,6 +34,16 @@ public class SurfImageSimilarity implements ImageSimilarity
     private FloatBuffer[] image2Descriptors;
     private double threshold = 0.6;
 
+    public void setThreshold(double value)
+    {
+        this.threshold = value;
+    }
+
+    public double getThreshold()
+    {
+        return this.threshold;
+    }
+
     public SurfImageSimilarity()
     {
         params.extended(1).hessianThreshold(300).nOctaves(3).nOctaveLayers(4);

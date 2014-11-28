@@ -151,6 +151,7 @@ public class ImageSearch extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
+        // Needed for SURF feature.
         Loader.load(opencv_nonfree.class);
 
         String[] nonOptional = {"i", "o", "q"};
