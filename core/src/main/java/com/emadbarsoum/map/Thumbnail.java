@@ -73,9 +73,9 @@ public class Thumbnail extends Configured implements Tool
                 targetImageMat.getByteBuffer().get(data);
                 context.write(key, new BytesWritable(data));
 
-                // cvReleaseMat(targetImageMat);
-                // cvReleaseImage(targetImage);
-                // cvReleaseImage(sourceImage);
+                cvReleaseMat(targetImageMat);
+                targetImage.release();
+                cvReleaseImage(sourceImage);
             }
         }
     }

@@ -50,7 +50,6 @@ public class ImageSequenceFileReaderTest
             out.close();
 
             cvReleaseMat(imageMat);
-            imageMat = null;
         }
 
         reader.close();

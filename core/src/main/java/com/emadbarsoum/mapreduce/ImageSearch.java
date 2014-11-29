@@ -48,16 +48,16 @@ public class ImageSearch extends Configured implements Tool
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
             Configuration conf = context.getConfiguration();
-            ImageSimilarity imageSimilarity = null;
+            ImageSimilarity imageSimilarity;
             String method = conf.get("method");
 
-            if (method.equals("hist"))
+            if (method.equals("surf"))
             {
-                imageSimilarity = new HistogramImageSimilarity();
+                imageSimilarity = new SurfImageSimilarity();
             }
             else
             {
-                imageSimilarity = new SurfImageSimilarity();
+                imageSimilarity = new HistogramImageSimilarity();
             }
 
             MetadataParser metadata = new MetadataParser(key.toString());
@@ -83,9 +83,6 @@ public class ImageSearch extends Configured implements Tool
 
                     cvReleaseImage(image);
                     cvReleaseImage(queryImage);
-
-                    image = null;
-                    queryImage = null;
                 }
             }
         }
@@ -156,8 +153,8 @@ public class ImageSearch extends Configured implements Tool
 
         String[] nonOptional = {"i", "o", "q"};
         CommandParser parser = new CommandParser(args);
-        if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 3) ||
+        if (!parser.parse()                ||
+            (parser.getNumberOfArgs() < 3) ||
             !(parser.has(nonOptional)))
         {
             showUsage();

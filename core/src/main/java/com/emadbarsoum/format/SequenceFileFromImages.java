@@ -61,7 +61,7 @@ public class SequenceFileFromImages
                     int lastIndex = name.lastIndexOf('.');
                     String str = name.substring(lastIndex).toLowerCase();
 
-                    if (str.equals(".jpg") || str.equals(".png"))
+                    if (str.equals(".jpg") || str.equals(".jpeg") || str.equals(".png"))
                     {
                         return true;
                     }

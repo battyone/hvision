@@ -86,7 +86,7 @@ public class ImageSequenceFileReader
                            (this.image.depth() == depth)   &&
                            (this.image.nChannels() == channelCount)))
                 {
-                    cvReleaseImage(this.image);
+                    this.image.release();
                     this.image = IplImage.create(width, height, depth, channelCount);
                 }
 
@@ -98,7 +98,7 @@ public class ImageSequenceFileReader
             {
                 if (this.image != null)
                 {
-                    cvReleaseImage(this.image);
+                    this.image.release();
                 }
 
                 this.image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
@@ -123,7 +123,7 @@ public class ImageSequenceFileReader
     {
         if (this.image != null)
         {
-            cvReleaseImage(this.image);
+            this.image.release();
             this.image = null;
         }
 

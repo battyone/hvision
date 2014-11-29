@@ -71,7 +71,7 @@ public class ImagesFromSequenceFile
                            (image.depth() == depth)   &&
                            (image.nChannels() == channelCount)))
                 {
-                    cvReleaseImage(image);
+                    image.release();
                     image = IplImage.create(width, height, depth, channelCount);
                 }
 
@@ -90,7 +90,6 @@ public class ImagesFromSequenceFile
                 out.close();
 
                 cvReleaseMat(imageMat);
-                imageMat = null;
             }
             else
             {
@@ -102,8 +101,7 @@ public class ImagesFromSequenceFile
 
         if (image != null)
         {
-            cvReleaseImage(image);
-            image = null;
+            image.release();
         }
 
         reader.close();

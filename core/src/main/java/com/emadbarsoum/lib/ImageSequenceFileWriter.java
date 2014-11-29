@@ -71,7 +71,6 @@ public class ImageSequenceFileWriter
             byteBuffer.get(fileData);
 
             cvReleaseImage(image);
-            image = null;
         }
 
         String name;
