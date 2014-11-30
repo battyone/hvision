@@ -28,10 +28,6 @@ public class SurfImageSimilarity implements ImageSimilarity
     private Mat image2Mat;
     private Mat indicesMat;
     private Mat distancesMat;
-    private CvSURFPoint[] image1Keypoints;
-    private FloatBuffer[] image1Descriptors;
-    private CvSURFPoint[] image2Keypoints;
-    private FloatBuffer[] image2Descriptors;
     private double threshold = 0.6;
 
     public void setThreshold(double value)
@@ -73,45 +69,51 @@ public class SurfImageSimilarity implements ImageSimilarity
 
         int total1 = descriptors1.total();
         int size1 = descriptors1.elem_size();
-        this.image1Keypoints = new CvSURFPoint[total1];
-        this.image1Descriptors = new FloatBuffer[total1];
+        CvSURFPoint[] image1Keypoints = new CvSURFPoint[total1];
+        FloatBuffer[] image1Descriptors = new FloatBuffer[total1];
         for (int i = 0; i < total1; i++)
         {
-            this.image1Keypoints[i] = new CvSURFPoint(cvGetSeqElem(keypoints1, i));
-            this.image1Descriptors[i] = cvGetSeqElem(descriptors1, i).capacity(size1).asByteBuffer().asFloatBuffer();
+            image1Keypoints[i] = new CvSURFPoint(cvGetSeqElem(keypoints1, i));
+            image1Descriptors[i] = cvGetSeqElem(descriptors1, i).capacity(size1).asByteBuffer().asFloatBuffer();
         }
 
         int total2 = descriptors2.total();
         int size2 = descriptors2.elem_size();
-        this.image2Keypoints = new CvSURFPoint[total2];
-        this.image2Descriptors = new FloatBuffer[total2];
+        CvSURFPoint[] image2Keypoints = new CvSURFPoint[total2];
+        FloatBuffer[] image2Descriptors = new FloatBuffer[total2];
         for (int i = 0; i < total2; i++)
         {
-            this.image2Keypoints[i] = new CvSURFPoint(cvGetSeqElem(keypoints2, i));
-            this.image2Descriptors[i] = cvGetSeqElem(descriptors2, i).capacity(size2).asByteBuffer().asFloatBuffer();
+            image2Keypoints[i] = new CvSURFPoint(cvGetSeqElem(keypoints2, i));
+            image2Descriptors[i] = cvGetSeqElem(descriptors2, i).capacity(size2).asByteBuffer().asFloatBuffer();
         }
 
         int total    = Math.min(total1, total2);
-        int length1  = this.image1Descriptors[0].capacity();
-        int length2  = this.image2Descriptors[0].capacity();
+        int length1  = image1Descriptors[0].capacity();
+        int length2  = image2Descriptors[0].capacity();
 
         image1Mat    = new Mat(total1, length1, CV_32F);
         image2Mat    = new Mat(total2, length2, CV_32F);
         indicesMat   = new Mat(total,        2, CV_32S);
         distancesMat = new Mat(total,        2, CV_32F);
 
-        /*
-        image1Mat    = CvMat.create(total, length, CV_32F, 1);
-        image2Mat    = CvMat.create(total, length, CV_32F, 1);
-        indicesMat   = CvMat.create(total,      2, CV_32S, 1);
-        distancesMat = CvMat.create(total,      2, CV_32F, 1);
-        */
+        // Copy descriptor into Mat object.
+        FloatBuffer image1Buf = this.image1Mat.getFloatBuffer();
+        for (int i = 0; i < image1Descriptors.length; i++)
+        {
+            image1Buf.put(image1Descriptors[i]);
+        }
 
-        flannIndex   = new Index();
-        indexParams  = new KDTreeIndexParams(4);
-        searchParams = new SearchParams(64, 0, true);
+        FloatBuffer image2Buf = this.image2Mat.getFloatBuffer();
+        for (int i = 0; i < image2Descriptors.length; i++)
+        {
+            image2Buf.put(image2Descriptors[i]);
+        }
 
-        double percentageOfMatches = computePercentageOfMatches();
+        this.flannIndex   = new Index();
+        this.indexParams  = new KDTreeIndexParams(4);
+        this.searchParams = new SearchParams(64, 0, true);
+
+        double percentageOfMatches = computePercentageOfMatches(total);
 
         cvReleaseImage(image1Gray);
         cvReleaseImage(image2Gray);
@@ -119,31 +121,18 @@ public class SurfImageSimilarity implements ImageSimilarity
         return percentageOfMatches;
     }
 
-    private double computePercentageOfMatches()
+    private double computePercentageOfMatches(int totalCount)
     {
-        image1Mat.rows(image1Descriptors.length);
-        image2Mat.rows(image2Descriptors.length);
+        // image1Mat.rows(image1Descriptors.length);
+        // image2Mat.rows(image2Descriptors.length);
 
-        // copy descriptors
-        FloatBuffer image1Buf = image1Mat.getFloatBuffer();
-        for (int i = 0; i < image1Descriptors.length; i++)
-        {
-            image1Buf.put(image1Descriptors[i]);
-        }
-
-        FloatBuffer image2Buf = image2Mat.getFloatBuffer();
-        for (int i = 0; i < image2Descriptors.length; i++)
-        {
-            image2Buf.put(image2Descriptors[i]);
-        }
-
-        flannIndex.build(image1Mat, indexParams, FLANN_DIST_L2);
-        flannIndex.knnSearch(image2Mat, indicesMat, distancesMat, 2, searchParams);
+        this.flannIndex.build(this.image1Mat, this.indexParams, FLANN_DIST_L2);
+        this.flannIndex.knnSearch(this.image2Mat, this.indicesMat, this.distancesMat, 2, this.searchParams);
 
         // IntBuffer indicesBuf = indicesMat.getIntBuffer();
         int matchesCount = 0;
-        FloatBuffer distsBuf = distancesMat.getFloatBuffer();
-        for (int i = 0; i < image2Descriptors.length; i++)
+        FloatBuffer distsBuf = this.distancesMat.getFloatBuffer();
+        for (int i = 0; i < totalCount; i++)
         {
             // System.out.format("%f, %f \n", distsBuf.get(2 * i), distsBuf.get(2 * i + 1));
 
@@ -153,6 +142,6 @@ public class SurfImageSimilarity implements ImageSimilarity
             }
         }
 
-        return (double)matchesCount / (double)image2Descriptors.length;
+        return (double)matchesCount / (double)totalCount;
     }
 }
