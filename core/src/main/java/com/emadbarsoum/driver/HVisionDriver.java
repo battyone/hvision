@@ -33,20 +33,40 @@ public final class HVisionDriver
     public static void main(String[] args) throws Throwable
     {
         int exitCode = -1;
-        ProgramDriver programDriver = new ProgramDriver();
+
+        if (args.length < 2)
+        {
+            showUsage();
+            System.exit(2);
+        }
 
         try
         {
-            // Map only tasks
-            programDriver.addClass("gaussian", Gaussian.class, "Map task that blur a set of images using Gaussian filter.");
-            programDriver.addClass("thumbnail", Thumbnail.class, "Map task that create thumbnails from a set of images.");
+            String[] remainingArgs = new String[args.length - 1];
+            System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
-            // MapReduce tasks
-            programDriver.addClass("imagesearch", ImageSearch.class, "MapReduce task that performs content based image search using various algorithms.");
+            if (args[0].equals("iseq"))
+            {
+                com.emadbarsoum.format.SequenceFileFromImages.main(remainingArgs);
+            }
+            else if (args[0].equals("idump"))
+            {
+                com.emadbarsoum.format.ImagesFromSequenceFile.main(remainingArgs);
+            }
+            else
+            {
+                ProgramDriver programDriver = new ProgramDriver();
 
-            // Run the task
-            programDriver.driver(args);
+                // Map only tasks
+                programDriver.addClass("gaussian", Gaussian.class, "Map task that blur a set of images using Gaussian filter.");
+                programDriver.addClass("thumbnail", Thumbnail.class, "Map task that create thumbnails from a set of images.");
 
+                // MapReduce tasks
+                programDriver.addClass("imagesearch", ImageSearch.class, "MapReduce task that performs content based image search using various algorithms.");
+
+                // Run the task
+                programDriver.driver(args);
+            }
             exitCode = 0;
         }
         catch (Throwable e)
@@ -55,5 +75,10 @@ public final class HVisionDriver
         }
 
         System.exit(exitCode);
+    }
+
+    private static void showUsage()
+    {
+        System.out.println("Usage: hvision <command> <args>");
     }
 }
