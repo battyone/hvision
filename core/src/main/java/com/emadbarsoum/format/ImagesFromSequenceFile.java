@@ -18,7 +18,9 @@ import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
 
 /**
- * com.emadbarsoum.format.ImagesFromSequenceFile
+ * A simple command line tool that dump all images in a given folder from a Hadoop sequence file.
+ *
+ * Here the main entry point: com.emadbarsoum.format.ImagesFromSequenceFile
  *
  */
 public class ImagesFromSequenceFile

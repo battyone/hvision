@@ -76,7 +76,7 @@ if [ "$HVISION_HEAPSIZE" != "" ]; then
   #echo $JAVA_HEAP_MAX
 fi
 
-if [ $1 = "iseq" ] || [ $1 = "idump" ] ; then
+if [ $1 = "iseq" ] || [ $1 = "idump" ] || [ $1 = "isrdump" ] ; then
   echo "Override HVISION_LOCAL, this command run local only."
   HVISION_LOCAL="local"
 fi

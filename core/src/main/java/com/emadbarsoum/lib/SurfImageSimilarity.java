@@ -118,7 +118,7 @@ public class SurfImageSimilarity implements ImageSimilarity
         cvReleaseImage(image1Gray);
         cvReleaseImage(image2Gray);
 
-        return percentageOfMatches;
+        return Math.max(1.0 - percentageOfMatches, 0.0);
     }
 
     private double computePercentageOfMatches(int totalCount)

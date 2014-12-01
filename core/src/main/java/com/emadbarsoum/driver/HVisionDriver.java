@@ -45,6 +45,7 @@ public final class HVisionDriver
             String[] remainingArgs = new String[args.length - 1];
             System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
+            // Non-hadoop tasks
             if (args[0].equals("iseq"))
             {
                 com.emadbarsoum.format.SequenceFileFromImages.main(remainingArgs);
@@ -53,6 +54,11 @@ public final class HVisionDriver
             {
                 com.emadbarsoum.format.ImagesFromSequenceFile.main(remainingArgs);
             }
+            else if (args[0].equals("isrdump"))
+            {
+                com.emadbarsoum.format.ImageSearchResultDump.main(remainingArgs);
+            }
+            // Hadoop tasks
             else
             {
                 ProgramDriver programDriver = new ProgramDriver();
