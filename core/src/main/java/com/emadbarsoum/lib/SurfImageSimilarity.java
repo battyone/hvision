@@ -123,9 +123,6 @@ public class SurfImageSimilarity implements ImageSimilarity
 
     private double computePercentageOfMatches(int totalCount)
     {
-        // image1Mat.rows(image1Descriptors.length);
-        // image2Mat.rows(image2Descriptors.length);
-
         this.flannIndex.build(this.image1Mat, this.indexParams, FLANN_DIST_L2);
         this.flannIndex.knnSearch(this.image2Mat, this.indicesMat, this.distancesMat, 2, this.searchParams);
 

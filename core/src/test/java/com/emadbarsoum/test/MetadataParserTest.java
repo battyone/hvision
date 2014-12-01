@@ -74,6 +74,84 @@ public class MetadataParserTest extends TestCase
 
     /**
      */
+    public void testRemoveMetadata()
+    {
+        MetadataParser parser = new MetadataParser("x=1;name=test;w=640;h=480");
+
+        try
+        {
+            parser.parse();
+
+            assertTrue(parser.has("name"));
+            parser.remove("name");
+            assertFalse(parser.has("name"));
+        }
+        catch (InvalidPropertiesFormatException e)
+        {
+            assertTrue(false);
+        }
+    }
+
+    /**
+     */
+    public void testReturnMetadata()
+    {
+        MetadataParser parser1 = new MetadataParser("x=1;y=2");
+
+        try
+        {
+            parser1.parse();
+
+            MetadataParser parser2 = new MetadataParser(parser1.toMetadata());
+            parser2.parse();
+
+            assertTrue(parser1.has("x"));
+            assertTrue(parser1.has("y"));
+            assertTrue(parser1.get("x").equals("1"));
+            assertTrue(parser1.get("y").equals("2"));
+
+            assertTrue(parser2.has("x"));
+            assertTrue(parser2.has("y"));
+            assertTrue(parser2.get("x").equals("1"));
+            assertTrue(parser2.get("y").equals("2"));
+        }
+        catch (InvalidPropertiesFormatException e)
+        {
+            assertTrue(false);
+        }
+    }
+
+    /**
+     */
+    public void testPutMetadata()
+    {
+        MetadataParser parser = new MetadataParser("x=1;y=2");
+
+        try
+        {
+            parser.parse();
+
+            parser.put("z", "3");
+
+            assertTrue(parser.has("x"));
+            assertTrue(parser.has("y"));
+            assertTrue(parser.has("z"));
+            assertTrue(parser.get("x").equals("1"));
+            assertTrue(parser.get("y").equals("2"));
+            assertTrue(parser.get("z").equals("3"));
+
+            parser.put("y","4");
+
+            assertTrue(parser.get("y").equals("4"));
+        }
+        catch (InvalidPropertiesFormatException e)
+        {
+            assertTrue(false);
+        }
+    }
+
+    /**
+     */
     public void testInvalidMetadata()
     {
         MetadataParser parser = new MetadataParser("x;y=2");

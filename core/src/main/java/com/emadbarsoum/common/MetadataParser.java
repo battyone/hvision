@@ -2,6 +2,7 @@ package com.emadbarsoum.common;
 
 import java.util.HashMap;
 import java.util.InvalidPropertiesFormatException;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -30,6 +31,39 @@ public class MetadataParser
     public int getAsInt(String name)
     {
         return Integer.parseInt(this.nameValues.get(name));
+    }
+
+    public void remove(String name)
+    {
+        if (this.has(name))
+        {
+            this.nameValues.remove(name);
+        }
+    }
+
+    public void put(String name, String value)
+    {
+        this.nameValues.put(name, value);
+    }
+
+    public String toMetadata()
+    {
+        String metadata = "";
+        Iterator it = this.nameValues.entrySet().iterator();
+        while (it.hasNext())
+        {
+            Map.Entry pairs = (Map.Entry)it.next();
+            if (metadata.isEmpty())
+            {
+                metadata += pairs.getKey() + "=" + pairs.getValue();
+            }
+            else
+            {
+                metadata += ";" + pairs.getKey() + "=" + pairs.getValue();
+            }
+        }
+
+        return metadata;
     }
 
     public void parse() throws InvalidPropertiesFormatException
