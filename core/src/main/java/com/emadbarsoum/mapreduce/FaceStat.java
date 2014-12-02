@@ -1,4 +1,4 @@
-package com.emadbarsoum.map;
+package com.emadbarsoum.mapreduce;
 
 import com.emadbarsoum.common.CommandParser;
 import com.emadbarsoum.common.MetadataParser;
@@ -6,19 +6,17 @@ import com.emadbarsoum.lib.FaceDetection;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.bytedeco.javacpp.BytePointer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.bytedeco.javacpp.opencv_core.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,17 +25,16 @@ import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
 
 /**
- * FindFaces is a Hadoop Map task that find all faces in a given Sequence File of Images
- * and output the result into another Sequence file.
- *
- * FindFaces will update Sequence File metadata with the number of faces.
+ * Created by ebarsoum on 12/1/14.
  */
-public class FindFaces extends Configured implements Tool
+public class FaceStat extends Configured implements Tool
 {
-    private static final Logger log = LoggerFactory.getLogger(FindFaces.class);
+    // private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
 
-    public static class FindFacesMapper extends Mapper<Text, BytesWritable, Text, BytesWritable>
+    public static class FaceStatMapper extends Mapper<Text, BytesWritable, IntWritable, IntWritable>
     {
+        private final static IntWritable one = new IntWritable(1);
+
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
@@ -65,21 +62,14 @@ public class FindFaces extends Configured implements Tool
 
                         detector.Detect(image);
 
-                        if (detector.count() > 0)
+                        // Count 0 to 3 people, more than that will be bucket into Crowd.
+                        if (detector.count() < 4)
                         {
-                            CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), detector.getResultImage());
-
-                            // Write the result...
-                            byte[] data = new byte[imageMat.size()];
-                            imageMat.getByteBuffer().get(data);
-
-                            String metadataString = key.toString();
-
-                            metadataString += ";facecount=" + detector.count();
-
-                            context.write(new Text(metadataString), new BytesWritable(data));
-
-                            cvReleaseMat(imageMat);
+                            context.write(new IntWritable(detector.count()), one);
+                        }
+                        else
+                        {
+                            context.write(new IntWritable(100), one);
                         }
 
                         cvReleaseImage(image);
@@ -93,6 +83,41 @@ public class FindFaces extends Configured implements Tool
         }
     }
 
+    public static class FaceStatReducer extends Reducer<IntWritable, IntWritable, Text, IntWritable>
+    {
+        @Override
+        public void reduce(IntWritable key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException
+        {
+            String name = "";
+            switch (key.get())
+            {
+                case 0:
+                    name = "Number of images with no person";
+                    break;
+                case 1:
+                    name = "Number of images with one person";
+                    break;
+                case 2:
+                    name = "Number of images with two persons";
+                    break;
+                case 3:
+                    name = "Number of images with three persons";
+                    break;
+                default:
+                    name = "Number of images with crowd";
+                    break;
+            }
+
+            int sum = 0;
+            for (IntWritable val : values)
+            {
+                sum += val.get();
+            }
+
+            context.write(new Text(name), new IntWritable(sum));
+        }
+    }
+
     @Override
     public final int run(final String[] args) throws Exception
     {
@@ -100,18 +125,20 @@ public class FindFaces extends Configured implements Tool
         CommandParser parser = new CommandParser(args);
         parser.parse();
 
-        Job job = Job.getInstance(conf, "Find Faces");
-        job.setJarByClass(Gaussian.class);
+        Job job = Job.getInstance(conf, "Face Stat");
+        job.setJarByClass(ImageSearch.class);
 
-        job.setMapperClass(FindFacesMapper.class);
-        job.setNumReduceTasks(0);
+        job.setMapperClass(FaceStatMapper.class);
+        job.setReducerClass(FaceStatReducer.class);
 
         // Input Output format
         job.setInputFormatClass(SequenceFileInputFormat.class);
-        job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+        job.setMapOutputKeyClass(IntWritable.class);
+        job.setMapOutputValueClass(IntWritable.class);
 
         job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(BytesWritable.class);
+        job.setOutputValueClass(IntWritable.class);
 
         FileInputFormat.addInputPath(job, new Path(parser.get("i")));
         FileOutputFormat.setOutputPath(job, new Path(parser.get("o")));
@@ -135,11 +162,11 @@ public class FindFaces extends Configured implements Tool
             System.exit(2);
         }
 
-        ToolRunner.run(new Configuration(), new FindFaces(), args);
+        ToolRunner.run(new Configuration(), new FaceStat(), args);
     }
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -m <model path>");
+        System.out.println("Arguments: -i <input path of the sequence file> -q <query image> -o <output path for the result> [-m <hist or surf>]");
     }
 }
