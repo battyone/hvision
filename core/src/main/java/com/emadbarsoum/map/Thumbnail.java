@@ -26,8 +26,11 @@ import static org.bytedeco.javacpp.opencv_highgui.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * com.emadbarsoum.map.Thumbnail
+ * Thumbnail is a Map task that create thumbnail images from a sequence file of images.
+ * The output is another sequence file that contains the small files. The size of the thumbnail
+ * is input as parameter.
  *
+ * Entry: com.emadbarsoum.map.Thumbnail
  */
 public class Thumbnail extends Configured implements Tool
 {

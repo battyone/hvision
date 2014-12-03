@@ -70,6 +70,7 @@ public final class HVisionDriver
 
                 // MapReduce tasks
                 programDriver.addClass("imagesearch", ImageSearch.class, "MapReduce task that performs content based image search using various algorithms.");
+                programDriver.addClass("facestat", FaceStat.class, "MapReduce task that summarize the number of faces per image.");
 
                 // Run the task
                 programDriver.driver(args);

@@ -31,6 +31,8 @@ import static org.bytedeco.javacpp.opencv_highgui.*;
  * and output the result into another Sequence file.
  *
  * FindFaces will update Sequence File metadata with the number of faces.
+ *
+ * Entry: com.emadbarsoum.map.FindFaces
  */
 public class FindFaces extends Configured implements Tool
 {

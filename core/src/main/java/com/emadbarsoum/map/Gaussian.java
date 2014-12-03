@@ -26,8 +26,10 @@ import static org.bytedeco.javacpp.opencv_highgui.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
- * com.emadbarsoum.map.Gaussian
+ * Gaussian is a Map task that smooth or blur all the images in the sequence file, using
+ * Gaussian filter with its parameters given in the command line.
  *
+ * Entry: com.emadbarsoum.map.Gaussian
  */
 public class Gaussian extends Configured implements Tool
 {

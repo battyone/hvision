@@ -35,12 +35,12 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * And it returns the same sequence file with its image sorted in such a way that the top ones are closed in similarity
  * to the input image.
  *
- * com.emadbarsoum.mapreduce.ImageSearch
+ * Entry: com.emadbarsoum.mapreduce.ImageSearch
  *
  */
 public class ImageSearch extends Configured implements Tool
 {
-    // private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
+    private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
 
     public static class ImageSearchMapper extends Mapper<Text, BytesWritable, DoubleWritable, Text>
     {

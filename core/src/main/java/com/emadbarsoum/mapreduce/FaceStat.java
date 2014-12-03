@@ -17,7 +17,8 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.opencv_core.*;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 
@@ -25,11 +26,14 @@ import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
 
 /**
- * Created by ebarsoum on 12/1/14.
+ * FaceStat is a Hadoop MapReduce task that find all faces in a given Sequence File of Images
+ * and output how many image have 0, 1, 2, 3 or more faces.
+ *
+ * Entry: com.emadbarsoum.mapreduce.FaceStat
  */
 public class FaceStat extends Configured implements Tool
 {
-    // private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
+    private static final Logger log = LoggerFactory.getLogger(FaceStat.class);
 
     public static class FaceStatMapper extends Mapper<Text, BytesWritable, IntWritable, IntWritable>
     {
@@ -88,7 +92,7 @@ public class FaceStat extends Configured implements Tool
         @Override
         public void reduce(IntWritable key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException
         {
-            String name = "";
+            String name;
             switch (key.get())
             {
                 case 0:
@@ -167,6 +171,6 @@ public class FaceStat extends Configured implements Tool
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -q <query image> -o <output path for the result> [-m <hist or surf>]");
+        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -m <model path>");
     }
 }
