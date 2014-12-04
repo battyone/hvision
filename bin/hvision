@@ -98,9 +98,29 @@ for f in $HVISION_HOME/core/target/hvision-*.jar; do
   CLASSPATH=${CLASSPATH}:$f;
 done
 
-# add third party dependencies to CLASSPATH
+# add third party dependencies to CLASSPATH, this
+# CLASSPATH will be used in local mode only.
 for f in $HVISION_HOME/core/target/dep/*.jar; do
   CLASSPATH=${CLASSPATH}:$f;
+done
+
+# add third party dependencies to LIBJARS
+# all the jars in LIBJARS will be distributed in Hadoop
+# cache.
+for f in $HVISION_HOME/core/target/dep/javacv-*.jar; do
+  LIBJARS=$f;
+done
+
+for f in $HVISION_HOME/core/target/dep/opencv-*.jar; do
+  LIBJARS=${LIBJARS},$f;
+done
+
+for f in $HVISION_HOME/core/target/dep/javacpp-*.jar; do
+  LIBJARS=${LIBJARS},$f;
+done
+
+for f in $HVISION_HOME/core/target/dep/libfreenect-*.jar; do
+  LIBJARS=${LIBJARS},$f;
 done
 
 # cygwin path translation
@@ -167,9 +187,11 @@ else
       echo $CLASSPATH
       ;;
     (*)
-      echo "HVISION-JOB: $HVISION_JOB"
       export HADOOP_CLASSPATH=${HADOOP_CLASSPATH}
-      exec "$HADOOP_BINARY" jar $HVISION_JOB $CLASS "$@"
+
+      CMD=$1
+      shift
+      exec "$HADOOP_BINARY" jar $HVISION_JOB $CLASS $CMD -libjars ${LIBJARS} "$@"
     esac
   fi
 fi

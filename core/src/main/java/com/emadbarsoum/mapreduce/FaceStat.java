@@ -158,8 +158,8 @@ public class FaceStat extends Configured implements Tool
     {
         String[] nonOptional = {"i", "o", "m"};
         CommandParser parser = new CommandParser(args);
-        if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 3) ||
+        if (!parser.parse()                ||
+            (parser.getNumberOfArgs() < 3) ||
             !(parser.has(nonOptional)))
         {
             showUsage();

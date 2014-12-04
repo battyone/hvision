@@ -105,8 +105,8 @@ public class Gaussian extends Configured implements Tool
     {
         String[] nonOptional = {"i", "o", "size", "sigma"};
         CommandParser parser = new CommandParser(args);
-        if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 4) ||
+        if (!parser.parse()                ||
+            (parser.getNumberOfArgs() < 4) ||
             !(parser.has(nonOptional)))
         {
             showUsage();

@@ -117,7 +117,7 @@ public class Thumbnail extends Configured implements Tool
         String[] nonOptional = {"i", "o", "size"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                 ||
-            (parser.getNumberOfArgs() != 3) ||
+            (parser.getNumberOfArgs() < 3) ||
             !(parser.has(nonOptional)))
         {
             showUsage();
