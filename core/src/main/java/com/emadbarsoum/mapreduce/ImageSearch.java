@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import com.emadbarsoum.common.CommandParser;
+import com.emadbarsoum.common.ImageHelper;
 import com.emadbarsoum.common.MetadataParser;
 import com.emadbarsoum.lib.*;
 import org.apache.hadoop.conf.Configuration;
@@ -47,6 +48,8 @@ public class ImageSearch extends Configured implements Tool
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
+            context.setStatus("Status: map started");
+
             Configuration conf = context.getConfiguration();
             ImageSimilarity imageSimilarity;
             String method = conf.get("method");
@@ -63,27 +66,60 @@ public class ImageSearch extends Configured implements Tool
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
+            context.setStatus("Status: Metadata parsed");
+
             URI[] uriPaths = context.getCacheFiles();
             if (uriPaths.length > 0)
             {
+                boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
                 String queryImagePath = uriPaths[0].getPath();
-                if (metadata.has("type") && metadata.get("type").equals("raw"))
+                IplImage queryImage = cvLoadImage(queryImagePath); //"queryImageFile");
+                IplImage image;
+
+                context.setStatus("Status: Query image loaded");
+                context.progress();
+
+                if (isRaw)
                 {
-                    //TODO: Add raw processing.
+                    int width = metadata.getAsInt("width");
+                    int height = metadata.getAsInt("height");
+                    int channelCount = metadata.getAsInt("channel_count");
+                    int depth =  metadata.getAsInt("depth");
+
+                    image = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                        value.getLength(),
+                        width,
+                        height,
+                        channelCount,
+                        depth);
+
+                    context.setStatus("Status: Image loaded");
+                    context.progress();
                 }
                 else
                 {
-                    IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-                    IplImage queryImage = cvLoadImage(queryImagePath); //"queryImageFile");
+                    image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
 
-                    double distance = imageSimilarity.computeDistance(image, queryImage);
-                    context.write(new DoubleWritable(distance), key);
-
-                    // System.out.format("%f, %s \n", distance, metadata.get("name"));
-
-                    cvReleaseImage(image);
-                    cvReleaseImage(queryImage);
+                    context.setStatus("Status: Image loaded");
+                    context.progress();
                 }
+
+                double distance = imageSimilarity.computeDistance(image, queryImage, context);
+                context.write(new DoubleWritable(distance), key);
+
+                context.setStatus("Status: map completed");
+
+                // Releasing the images...
+                if (isRaw)
+                {
+                    image.release();
+                }
+                else
+                {
+                    cvReleaseImage(image);
+                }
+
+                cvReleaseImage(queryImage);
             }
         }
     }

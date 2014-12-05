@@ -1,6 +1,7 @@
 package com.emadbarsoum.map;
 
 import com.emadbarsoum.common.CommandParser;
+import com.emadbarsoum.common.ImageHelper;
 import com.emadbarsoum.common.MetadataParser;
 import com.emadbarsoum.lib.FaceDetection;
 import org.apache.hadoop.conf.Configuration;
@@ -51,45 +52,72 @@ public class FindFaces extends Configured implements Tool
             URI[] uriPaths = context.getCacheFiles();
             if (uriPaths.length > 0)
             {
+                boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
+                IplImage image;
                 String modelPath = uriPaths[0].getPath();
                 FaceDetection detector = new FaceDetection();
 
                 detector.setModel(modelPath);
-                if (metadata.has("type") && metadata.get("type").equals("raw"))
+                if (isRaw)
                 {
-                    //TODO: Add raw processing.
+                    int width = metadata.getAsInt("width");
+                    int height = metadata.getAsInt("height");
+                    int channelCount = metadata.getAsInt("channel_count");
+                    int depth =  metadata.getAsInt("depth");
+
+                    image = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                        value.getLength(),
+                        width,
+                        height,
+                        channelCount,
+                        depth);
+
+                    context.setStatus("Status: Image loaded");
+                    context.progress();
                 }
                 else
                 {
-                    try
+                    image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+
+                    context.setStatus("Status: Image loaded");
+                    context.progress();
+                }
+
+                try
+                {
+                    detector.Detect(image, context);
+
+                    if (detector.count() > 0)
                     {
-                        IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+                        CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), detector.getResultImage());
 
-                        detector.Detect(image);
+                        // Write the result...
+                        byte[] data = new byte[imageMat.size()];
+                        imageMat.getByteBuffer().get(data);
 
-                        if (detector.count() > 0)
-                        {
-                            CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), detector.getResultImage());
+                        String metadataString = key.toString();
 
-                            // Write the result...
-                            byte[] data = new byte[imageMat.size()];
-                            imageMat.getByteBuffer().get(data);
+                        metadataString += ";facecount=" + detector.count();
 
-                            String metadataString = key.toString();
+                        context.write(new Text(metadataString), new BytesWritable(data));
 
-                            metadataString += ";facecount=" + detector.count();
-
-                            context.write(new Text(metadataString), new BytesWritable(data));
-
-                            cvReleaseMat(imageMat);
-                        }
-
-                        cvReleaseImage(image);
+                        cvReleaseMat(imageMat);
                     }
-                    catch (Exception e)
-                    {
-                        //TODO: log error.
-                    }
+                }
+                catch (Exception e)
+                {
+                    //TODO: log error.
+                }
+
+                context.setStatus("Status: map completed");
+
+                if (isRaw)
+                {
+                    image.release();
+                }
+                else
+                {
+                    cvReleaseImage(image);
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.emadbarsoum.mapreduce;
 
 import com.emadbarsoum.common.CommandParser;
+import com.emadbarsoum.common.ImageHelper;
 import com.emadbarsoum.common.MetadataParser;
 import com.emadbarsoum.lib.FaceDetection;
 import org.apache.hadoop.conf.Configuration;
@@ -42,46 +43,77 @@ public class FaceStat extends Configured implements Tool
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
+            context.setStatus("Status: map started");
+
             Configuration conf = context.getConfiguration();
 
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
+            context.setStatus("Status: Metadata parsed");
+
             URI[] uriPaths = context.getCacheFiles();
             if (uriPaths.length > 0)
             {
+                boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
+                IplImage image;
                 String modelPath = uriPaths[0].getPath();
                 FaceDetection detector = new FaceDetection();
 
                 detector.setModel(modelPath);
-                if (metadata.has("type") && metadata.get("type").equals("raw"))
+                if (isRaw)
                 {
-                    //TODO: Add raw processing.
+                    int width = metadata.getAsInt("width");
+                    int height = metadata.getAsInt("height");
+                    int channelCount = metadata.getAsInt("channel_count");
+                    int depth =  metadata.getAsInt("depth");
+
+                    image = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                        value.getLength(),
+                        width,
+                        height,
+                        channelCount,
+                        depth);
+
+                    context.setStatus("Status: Image loaded");
+                    context.progress();
                 }
                 else
                 {
-                    try
+                    image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+
+                    context.setStatus("Status: Image loaded");
+                    context.progress();
+                }
+
+                try
+                {
+                    detector.Detect(image, context);
+
+                    // Count 0 to 3 people, more than that will be bucket into Crowd.
+                    if (detector.count() < 4)
                     {
-                        IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-
-                        detector.Detect(image);
-
-                        // Count 0 to 3 people, more than that will be bucket into Crowd.
-                        if (detector.count() < 4)
-                        {
-                            context.write(new IntWritable(detector.count()), one);
-                        }
-                        else
-                        {
-                            context.write(new IntWritable(100), one);
-                        }
-
-                        cvReleaseImage(image);
+                        context.write(new IntWritable(detector.count()), one);
                     }
-                    catch (Exception e)
+                    else
                     {
-                        //TODO: log error.
+                        context.write(new IntWritable(100), one);
                     }
+                }
+                catch (Exception e)
+                {
+                    //TODO: log error.
+                }
+
+                context.setStatus("Status: map completed");
+
+                if (isRaw)
+                {
+                    image.release();
+                }
+                else
+                {
+                    cvReleaseImage(image);
                 }
             }
         }

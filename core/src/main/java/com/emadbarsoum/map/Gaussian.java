@@ -3,6 +3,7 @@ package com.emadbarsoum.map;
 import java.io.IOException;
 
 import com.emadbarsoum.common.CommandParser;
+import com.emadbarsoum.common.ImageHelper;
 import com.emadbarsoum.common.MetadataParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -45,27 +46,55 @@ public class Gaussian extends Configured implements Tool
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
+            boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
             int size = conf.getInt("size", 3);
             double sigma = conf.getDouble("sigma", 1.0);
+            IplImage image;
 
-            if (metadata.has("type") && metadata.get("type").equals("raw"))
+            if (isRaw)
             {
-                //TODO: Add raw processing.
+                int width = metadata.getAsInt("width");
+                int height = metadata.getAsInt("height");
+                int channelCount = metadata.getAsInt("channel_count");
+                int depth =  metadata.getAsInt("depth");
+
+                image = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                    value.getLength(),
+                    width,
+                    height,
+                    channelCount,
+                    depth);
+
+                context.setStatus("Status: Image loaded");
+                context.progress();
             }
             else
             {
-                IplImage image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
+                image = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
 
-                cvSmooth(image, image, CV_GAUSSIAN, size, size, sigma, sigma);
+                context.setStatus("Status: Image loaded");
+                context.progress();
+            }
 
-                CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), image);
+            cvSmooth(image, image, CV_GAUSSIAN, size, size, sigma, sigma);
 
-                // Write the result...
-                byte[] data = new byte[imageMat.size()];
-                imageMat.getByteBuffer().get(data);
-                context.write(key, new BytesWritable(data));
+            CvMat imageMat = cvEncodeImage("." + metadata.get("ext"), image);
 
-                cvReleaseMat(imageMat);
+            // Write the result...
+            byte[] data = new byte[imageMat.size()];
+            imageMat.getByteBuffer().get(data);
+            context.write(key, new BytesWritable(data));
+
+            cvReleaseMat(imageMat);
+
+            context.setStatus("Status: map completed");
+
+            if (isRaw)
+            {
+                image.release();
+            }
+            else
+            {
                 cvReleaseImage(image);
             }
         }

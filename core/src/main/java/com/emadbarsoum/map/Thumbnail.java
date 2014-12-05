@@ -3,6 +3,7 @@ package com.emadbarsoum.map;
 import java.io.IOException;
 
 import com.emadbarsoum.common.CommandParser;
+import com.emadbarsoum.common.ImageHelper;
 import com.emadbarsoum.common.MetadataParser;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -45,39 +46,67 @@ public class Thumbnail extends Configured implements Tool
 
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
+            boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
 
             int size = conf.getInt("size", 120);
             int w = size;
             int h = size;
 
-            if (metadata.has("type") && metadata.get("type").equals("raw"))
+            IplImage sourceImage;
+            if (isRaw)
             {
-                //TODO: Add raw processing.
+                int width = metadata.getAsInt("width");
+                int height = metadata.getAsInt("height");
+                int channelCount = metadata.getAsInt("channel_count");
+                int depth =  metadata.getAsInt("depth");
+
+                sourceImage = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                    value.getLength(),
+                    width,
+                    height,
+                    channelCount,
+                    depth);
+
+                context.setStatus("Status: Image loaded");
+                context.progress();
             }
             else
             {
-                IplImage sourceImage = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
-                if (sourceImage.width() > sourceImage.height())
-                {
-                    h = (w * sourceImage.height()) / sourceImage.width();
-                }
-                else
-                {
-                    w = (h * sourceImage.width()) / sourceImage.height();
-                }
+                sourceImage = cvDecodeImage(cvMat(1, value.getLength(), CV_8UC1, new BytePointer(value.getBytes())));
 
-                IplImage targetImage = IplImage.create(w, h, sourceImage.depth(), sourceImage.nChannels());
+                context.setStatus("Status: Image loaded");
+                context.progress();
+            }
 
-                cvResize(sourceImage, targetImage);
-                CvMat targetImageMat = cvEncodeImage("." + metadata.get("ext"), targetImage);
+            if (sourceImage.width() > sourceImage.height())
+            {
+                h = (w * sourceImage.height()) / sourceImage.width();
+            }
+            else
+            {
+                w = (h * sourceImage.width()) / sourceImage.height();
+            }
 
-                // Write the result...
-                byte[] data = new byte[targetImageMat.size()];
-                targetImageMat.getByteBuffer().get(data);
-                context.write(key, new BytesWritable(data));
+            IplImage targetImage = IplImage.create(w, h, sourceImage.depth(), sourceImage.nChannels());
 
-                cvReleaseMat(targetImageMat);
-                targetImage.release();
+            cvResize(sourceImage, targetImage);
+            CvMat targetImageMat = cvEncodeImage("." + metadata.get("ext"), targetImage);
+
+            // Write the result...
+            byte[] data = new byte[targetImageMat.size()];
+            targetImageMat.getByteBuffer().get(data);
+            context.write(key, new BytesWritable(data));
+
+            cvReleaseMat(targetImageMat);
+            targetImage.release();
+            context.setStatus("Status: map completed");
+
+            if (isRaw)
+            {
+                sourceImage.release();
+            }
+            else
+            {
                 cvReleaseImage(sourceImage);
             }
         }

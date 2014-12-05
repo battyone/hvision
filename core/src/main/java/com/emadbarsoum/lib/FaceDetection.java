@@ -1,5 +1,7 @@
 package com.emadbarsoum.lib;
 
+import org.apache.hadoop.mapreduce.Mapper.*;
+
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_objdetect.*;
 
@@ -45,7 +47,7 @@ public class FaceDetection
         return this.faceLocations;
     }
 
-    public void Detect(IplImage image) throws Exception
+    public void Detect(IplImage image, Context context) throws Exception
     {
         if ((this.model == null) || this.model.isEmpty())
         {
@@ -58,6 +60,11 @@ public class FaceDetection
         // Convert the input image into a gray image.
         cvCvtColor(image, grayImage, CV_BGR2GRAY);
 
+        if (context != null)
+        {
+            context.progress();
+        }
+
         CvMemStorage storage = CvMemStorage.create();
 
         // Load the classifier.
@@ -65,6 +72,11 @@ public class FaceDetection
 
         // Detect all faces in the image.
         CvSeq faces = cvHaarDetectObjects(grayImage, cascade, storage, 1.1, 1, 0);
+
+        if (context != null)
+        {
+            context.progress();
+        }
 
         this.faceCount = faces.total();
         this.faceLocations.clear();
@@ -77,5 +89,9 @@ public class FaceDetection
             faceLocations.add(new Rectangle(r.x(), r.y(), r.width(), r.height()));
         }
 
+        if (context != null)
+        {
+            context.progress();
+        }
     }
 }

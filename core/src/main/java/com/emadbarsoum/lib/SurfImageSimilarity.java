@@ -1,18 +1,14 @@
 package com.emadbarsoum.lib;
 
-import org.bytedeco.javacpp.helper.opencv_core.*;
+import org.apache.hadoop.mapreduce.Mapper.*;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_legacy.*;
 
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
-import static org.bytedeco.javacpp.opencv_calib3d.*;
-import static org.bytedeco.javacpp.opencv_features2d.*;
 import static org.bytedeco.javacpp.opencv_flann.*;
-import static org.bytedeco.javacpp.opencv_highgui.*;
 import static org.bytedeco.javacpp.opencv_legacy.*;
 
 /**
@@ -45,7 +41,7 @@ public class SurfImageSimilarity implements ImageSimilarity
         params.extended(1).hessianThreshold(300).nOctaves(3).nOctaveLayers(4);
     }
 
-    public double computeDistance(IplImage image1, IplImage image2)
+    public double computeDistance(IplImage image1, IplImage image2, Context context)
     {
         CvSeq keypoints1   = new CvSeq(null);
         CvSeq descriptors1 = new CvSeq(null);
@@ -63,9 +59,19 @@ public class SurfImageSimilarity implements ImageSimilarity
         cvClearMemStorage(storage1);
         cvExtractSURF(image1Gray, null, keypoints1, descriptors1, storage1, params, 0);
 
+        if (context != null)
+        {
+            context.progress();
+        }
+
         CvMemStorage storage2 = CvMemStorage.create();
         cvClearMemStorage(storage2);
         cvExtractSURF(image2Gray, null, keypoints2, descriptors2, storage2, params, 0);
+
+        if (context != null)
+        {
+            context.progress();
+        }
 
         int total1 = descriptors1.total();
         int size1 = descriptors1.elem_size();
@@ -85,6 +91,11 @@ public class SurfImageSimilarity implements ImageSimilarity
         {
             image2Keypoints[i] = new CvSURFPoint(cvGetSeqElem(keypoints2, i));
             image2Descriptors[i] = cvGetSeqElem(descriptors2, i).capacity(size2).asByteBuffer().asFloatBuffer();
+        }
+
+        if (context != null)
+        {
+            context.progress();
         }
 
         int total    = Math.min(total1, total2);
@@ -109,11 +120,21 @@ public class SurfImageSimilarity implements ImageSimilarity
             image2Buf.put(image2Descriptors[i]);
         }
 
+        if (context != null)
+        {
+            context.progress();
+        }
+
         this.flannIndex   = new Index();
         this.indexParams  = new KDTreeIndexParams(4);
         this.searchParams = new SearchParams(64, 0, true);
 
         double percentageOfMatches = computePercentageOfMatches(total);
+
+        if (context != null)
+        {
+            context.progress();
+        }
 
         cvReleaseImage(image1Gray);
         cvReleaseImage(image2Gray);

@@ -1,5 +1,6 @@
 package com.emadbarsoum.lib;
 
+import org.apache.hadoop.mapreduce.Mapper.*;
 import org.bytedeco.javacpp.opencv_core.*;
 
 /**
@@ -8,5 +9,5 @@ import org.bytedeco.javacpp.opencv_core.*;
  */
 public interface ImageSimilarity
 {
-    public double computeDistance(IplImage image1, IplImage image2);
+    public double computeDistance(IplImage image1, IplImage image2, Context context);
 }
