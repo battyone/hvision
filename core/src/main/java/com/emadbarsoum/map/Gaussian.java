@@ -83,7 +83,11 @@ public class Gaussian extends Configured implements Tool
             // Write the result...
             byte[] data = new byte[imageMat.size()];
             imageMat.getByteBuffer().get(data);
-            context.write(key, new BytesWritable(data));
+
+            // The result stored as compressed.
+            metadata.remove("type");
+
+            context.write(new Text(metadata.toMetadata()), new BytesWritable(data));
 
             cvReleaseMat(imageMat);
 

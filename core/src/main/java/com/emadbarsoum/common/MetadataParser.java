@@ -46,6 +46,11 @@ public class MetadataParser
         this.nameValues.put(name, value);
     }
 
+    public void put(String name, int value)
+    {
+        this.nameValues.put(name, Integer.toString(value));
+    }
+
     public String toMetadata()
     {
         String metadata = "";

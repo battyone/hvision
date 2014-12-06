@@ -1,6 +1,6 @@
 package com.emadbarsoum.lib;
 
-import org.apache.hadoop.mapreduce.Mapper.*;
+import org.apache.hadoop.mapreduce.*;
 
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_objdetect.*;
@@ -47,7 +47,7 @@ public class FaceDetection
         return this.faceLocations;
     }
 
-    public void Detect(IplImage image, Context context) throws Exception
+    public void Detect(IplImage image, TaskAttemptContext context) throws Exception
     {
         if ((this.model == null) || this.model.isEmpty())
         {

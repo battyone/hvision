@@ -1,6 +1,6 @@
 package com.emadbarsoum.lib;
 
-import org.apache.hadoop.mapreduce.Mapper.*;
+import org.apache.hadoop.mapreduce.*;
 import org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_legacy.*;
 
@@ -41,7 +41,7 @@ public class SurfImageSimilarity implements ImageSimilarity
         params.extended(1).hessianThreshold(300).nOctaves(3).nOctaveLayers(4);
     }
 
-    public double computeDistance(IplImage image1, IplImage image2, Context context)
+    public double computeDistance(IplImage image1, IplImage image2, TaskAttemptContext context)
     {
         CvSeq keypoints1   = new CvSeq(null);
         CvSeq descriptors1 = new CvSeq(null);

@@ -132,13 +132,16 @@ public class MetadataParserTest extends TestCase
             parser.parse();
 
             parser.put("z", "3");
+            parser.put("a", 4);
 
             assertTrue(parser.has("x"));
             assertTrue(parser.has("y"));
             assertTrue(parser.has("z"));
+            assertTrue(parser.has("a"));
             assertTrue(parser.get("x").equals("1"));
             assertTrue(parser.get("y").equals("2"));
             assertTrue(parser.get("z").equals("3"));
+            assertTrue(parser.get("a").equals("4"));
 
             parser.put("y","4");
 

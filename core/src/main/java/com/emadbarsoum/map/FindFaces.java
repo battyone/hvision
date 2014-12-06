@@ -95,11 +95,13 @@ public class FindFaces extends Configured implements Tool
                         byte[] data = new byte[imageMat.size()];
                         imageMat.getByteBuffer().get(data);
 
-                        String metadataString = key.toString();
+                        // The result stored as compressed.
+                        metadata.remove("type");
 
-                        metadataString += ";facecount=" + detector.count();
+                        // Store face count.
+                        metadata.put("facecount", detector.count());
 
-                        context.write(new Text(metadataString), new BytesWritable(data));
+                        context.write(new Text(metadata.toMetadata()), new BytesWritable(data));
 
                         cvReleaseMat(imageMat);
                     }

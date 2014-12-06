@@ -1,6 +1,6 @@
 package com.emadbarsoum.lib;
 
-import org.apache.hadoop.mapreduce.Mapper.*;
+import org.apache.hadoop.mapreduce.*;
 import org.bytedeco.javacpp.helper.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core.*;
 
@@ -27,7 +27,7 @@ public class HistogramImageSimilarity implements ImageSimilarity
     public HistogramImageSimilarity()
     {}
 
-    public double computeDistance(IplImage image1, IplImage image2, Context context)
+    public double computeDistance(IplImage image1, IplImage image2, TaskAttemptContext context)
     {
         float minRange = 0.0f;
         float maxRange = 255.0f;
