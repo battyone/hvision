@@ -84,6 +84,6 @@ public class SequenceFileFromImages
 
     private static void showUsage()
     {
-        System.out.println("Usage: SequenceFileFromImages -i <input path to folder of images> -o <output path for sequence file> [-raw]");
+        System.out.println("Usage: hvision iseq -i <input path to folder of images> -o <output path for sequence file> [-raw]");
     }
 }

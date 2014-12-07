@@ -111,6 +111,6 @@ public class ImagesFromSequenceFile
 
     private static void showUsage()
     {
-        System.out.println("Usage: ImagesFromSequenceFile -i <input path to sequence file> -o <output folder>");
+        System.out.println("Usage: hvision idump -i <input path to sequence file> -o <output folder>");
     }
 }

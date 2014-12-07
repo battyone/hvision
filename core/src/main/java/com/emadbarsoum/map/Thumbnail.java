@@ -162,6 +162,6 @@ public class Thumbnail extends Configured implements Tool
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -size <resolution>");
+        System.out.println("Usage: hvision thumbnail -i <input path of the sequence file> -o <output path for sequence file> -size <resolution>");
     }
 }

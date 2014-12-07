@@ -20,15 +20,15 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.partition.InputSampler;
+import org.apache.hadoop.mapreduce.lib.partition.TotalOrderPartitioner;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.bytedeco.javacv.*;
 import org.bytedeco.javacpp.*;
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  *
@@ -36,14 +36,17 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * And it returns the same sequence file with its image sorted in such a way that the top ones are closed in similarity
  * to the input image.
  *
- * Entry: com.emadbarsoum.mapreduce.ImageSearch
+ * The different between ImageSearch and ImageSearchTotalOrder, is that ImageSearchTotalOrder use total order
+ * partition to provide global ordering across multiple reducers. So that the resulted sequence files can be concatenated.
+ *
+ * Entry: com.emadbarsoum.mapreduce.ImageSearchTotalOrder
  *
  */
-public class ImageSearch extends Configured implements Tool
+public class ImageSearchTotalOrder extends Configured implements Tool
 {
-    private static final Logger log = LoggerFactory.getLogger(ImageSearch.class);
+    private static final Logger log = LoggerFactory.getLogger(ImageSearchTotalOrder.class);
 
-    public static class ImageSearchMapper extends Mapper<Text, BytesWritable, DoubleWritable, Text>
+    public static class ImageSearchTotalOrderMapper extends Mapper<Text, BytesWritable, DoubleWritable, Text>
     {
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
@@ -87,11 +90,11 @@ public class ImageSearch extends Configured implements Tool
                     int depth =  metadata.getAsInt("depth");
 
                     image = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
-                        value.getLength(),
-                        width,
-                        height,
-                        channelCount,
-                        depth);
+                            value.getLength(),
+                            width,
+                            height,
+                            channelCount,
+                            depth);
 
                     context.setStatus("Status: Image loaded");
                     context.progress();
@@ -124,7 +127,7 @@ public class ImageSearch extends Configured implements Tool
         }
     }
 
-    public static class ImageSearchReducer extends Reducer<DoubleWritable, Text, DoubleWritable, Text>
+    public static class ImageSearchTotalOrderReducer extends Reducer<DoubleWritable, Text, DoubleWritable, Text>
     {
         @Override
         public void reduce(DoubleWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException
@@ -153,12 +156,11 @@ public class ImageSearch extends Configured implements Tool
         }
 
         Job job = Job.getInstance(conf, "Image Search");
-        job.setJarByClass(ImageSearch.class);
+        job.setJarByClass(ImageSearchTotalOrder.class);
 
-        job.setMapperClass(ImageSearchMapper.class);
-        // job.setCombinerClass(ImageSearchReducer.class);
-        job.setReducerClass(ImageSearchReducer.class);
-        // job.setNumReduceTasks(0);
+        job.setMapperClass(ImageSearchTotalOrderMapper.class);
+        job.setReducerClass(ImageSearchTotalOrderReducer.class);
+        job.setPartitionerClass(TotalOrderPartitioner.class);
 
         // Input Output format
         job.setInputFormatClass(SequenceFileInputFormat.class);
@@ -172,6 +174,23 @@ public class ImageSearch extends Configured implements Tool
 
         FileInputFormat.addInputPath(job, new Path(parser.get("i")));
         FileOutputFormat.setOutputPath(job, new Path(parser.get("o")));
+
+        Path partitionFilePath = new Path(new Path(parser.get("p")),
+            "ImageSearchPartitionFile");
+        TotalOrderPartitioner.setPartitionFile(job.getConfiguration(),
+            partitionFilePath);
+
+        // Number of reducers can be set by "-Dmapreduce.job.reduces=<>" from the command
+        // line. Here we make sure that there are atleast 2 reducers.
+        int numOfReducers = job.getNumReduceTasks();
+        if (numOfReducers <= 1)
+        {
+            numOfReducers = 2;
+            job.setNumReduceTasks(numOfReducers);
+        }
+
+        InputSampler.Sampler<DoubleWritable, Text> sampler = new InputSampler.RandomSampler<>(0.1, 10000, 10);
+        InputSampler.writePartitionFile(job, sampler);
 
         // Use symbolic link "queryImageFile" to support different platform formats
         // and protocols.
@@ -187,21 +206,21 @@ public class ImageSearch extends Configured implements Tool
         // Needed for SURF feature.
         Loader.load(opencv_nonfree.class);
 
-        String[] nonOptional = {"i", "o", "q"};
+        String[] nonOptional = {"i", "p", "o", "q"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||
-            (parser.getNumberOfArgs() < 3) ||
-            !(parser.has(nonOptional)))
+                (parser.getNumberOfArgs() < 4) ||
+                !(parser.has(nonOptional)))
         {
             showUsage();
             System.exit(2);
         }
 
-        ToolRunner.run(new Configuration(), new ImageSearch(), args);
+        ToolRunner.run(new Configuration(), new ImageSearchTotalOrder(), args);
     }
 
     private static void showUsage()
     {
-        System.out.println("Usage: hvision imagesearch -i <input path of the sequence file> -q <query image> -o <output path for the result> [-m <hist or surf>]");
+        System.out.println("Usage: hvision imagesearchtotal -i <input path of the sequence file> -q <query image> -p <folder path of partition file> -o <output path for the result> [-m <hist or surf>]");
     }
 }

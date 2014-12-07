@@ -203,6 +203,6 @@ public class FaceStat extends Configured implements Tool
 
     private static void showUsage()
     {
-        System.out.println("Arguments: -i <input path of the sequence file> -o <output path for sequence file> -m <model path>");
+        System.out.println("Usage: hvision facestat -i <input path of the sequence file> -o <output path for sequence file> -m <model path>");
     }
 }
