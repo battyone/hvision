@@ -1,12 +1,5 @@
 package com.emadbarsoum.driver;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import com.emadbarsoum.map.*;
 import com.emadbarsoum.mapreduce.*;
 import org.slf4j.Logger;

@@ -155,7 +155,7 @@ public class ImageSearchTotalOrder extends Configured implements Tool
             conf.set("method", "hist");
         }
 
-        Job job = Job.getInstance(conf, "Image Search");
+        Job job = Job.getInstance(conf, "Image Search Total Order");
         job.setJarByClass(ImageSearchTotalOrder.class);
 
         job.setMapperClass(ImageSearchTotalOrderMapper.class);
@@ -189,7 +189,7 @@ public class ImageSearchTotalOrder extends Configured implements Tool
             job.setNumReduceTasks(numOfReducers);
         }
 
-        InputSampler.Sampler<DoubleWritable, Text> sampler = new InputSampler.RandomSampler<>(0.1, 10000, 10);
+        InputSampler.Sampler sampler = new InputSampler.RandomSampler<>(0.1, 100, numOfReducers - 1);
         InputSampler.writePartitionFile(job, sampler);
 
         // Use symbolic link "queryImageFile" to support different platform formats
@@ -209,8 +209,8 @@ public class ImageSearchTotalOrder extends Configured implements Tool
         String[] nonOptional = {"i", "p", "o", "q"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||
-                (parser.getNumberOfArgs() < 4) ||
-                !(parser.has(nonOptional)))
+            (parser.getNumberOfArgs() < 4) ||
+            !(parser.has(nonOptional)))
         {
             showUsage();
             System.exit(2);
