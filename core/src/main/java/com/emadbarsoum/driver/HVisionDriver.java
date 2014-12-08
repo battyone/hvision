@@ -61,6 +61,7 @@ public final class HVisionDriver
                 programDriver.addClass("median", Median.class, "Map task that blur a set of images using Median filter.");
                 programDriver.addClass("thumbnail", Thumbnail.class, "Map task that create thumbnails from a set of images.");
                 programDriver.addClass("findfaces", FindFaces.class, "Map task that find all faces in each image.");
+                programDriver.addClass("color2gray", Gaussian.class, "Map task that convert a set of colored images to monochrome images.");
 
                 // MapReduce tasks
                 programDriver.addClass("imagesearch", ImageSearch.class, "MapReduce task that performs content based image search using various algorithms.");
