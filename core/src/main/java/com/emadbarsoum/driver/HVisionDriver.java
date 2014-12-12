@@ -62,6 +62,8 @@ public final class HVisionDriver
                 programDriver.addClass("thumbnail", Thumbnail.class, "Map task that create thumbnails from a set of images.");
                 programDriver.addClass("findfaces", FindFaces.class, "Map task that find all faces in each image.");
                 programDriver.addClass("color2gray", Gaussian.class, "Map task that convert a set of colored images to monochrome images.");
+                programDriver.addClass("dilate", Dilate.class, "Map task that dilate a set of images.");
+                programDriver.addClass("erode", Erode.class, "Map task that erode a set of images.");
 
                 // MapReduce tasks
                 programDriver.addClass("imagesearch", ImageSearch.class, "MapReduce task that performs content based image search using various algorithms.");

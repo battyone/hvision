@@ -11,6 +11,17 @@ import java.util.Arrays;
 public class ImageHelper
 {
     // Creating IplImage from a raw uncompressed image data.
+    public static IplImage createIplImageFromRawBytes(byte[] imageData, int length, MetadataParser metadata)
+    {
+        int width = metadata.getAsInt("width");
+        int height = metadata.getAsInt("height");
+        int channelCount = metadata.getAsInt("channel_count");
+        int depth = metadata.getAsInt("depth");
+
+        return createIplImageFromRawBytes(imageData, length, width, height, channelCount, depth);
+    }
+
+    // Creating IplImage from a raw uncompressed image data.
     public static IplImage createIplImageFromRawBytes(byte[] imageData, int length, int width, int height, int channelCount, int depth)
     {
         IplImage image = IplImage.create(width, height, depth, channelCount);
