@@ -11,7 +11,7 @@ import java.util.Arrays;
 public class ImageHelper
 {
     // Creating IplImage from a raw uncompressed image data.
-    public static IplImage CreateIplImageFromRawBytes(byte[] imageData, int length, int width, int height, int channelCount, int depth)
+    public static IplImage createIplImageFromRawBytes(byte[] imageData, int length, int width, int height, int channelCount, int depth)
     {
         IplImage image = IplImage.create(width, height, depth, channelCount);
 
@@ -20,5 +20,22 @@ public class ImageHelper
         buffer.put(rawBuffer);
 
         return image;
+    }
+
+    public static void serializeMat(String name, Mat mat, String path)
+    {
+        FileStorage storage = new FileStorage(path, FileStorage.WRITE);
+        CvMat cvMat = mat.asCvMat();
+        storage.writeObj(name, cvMat);
+        storage.release();
+    }
+
+    public static Mat deserializeMat(String name, String path)
+    {
+        FileStorage storage = new FileStorage(path, FileStorage.READ);
+        CvMat cvMat = new CvMat(storage.get(name).readObj());
+        Mat mat = new Mat(cvMat);
+
+        return mat;
     }
 }

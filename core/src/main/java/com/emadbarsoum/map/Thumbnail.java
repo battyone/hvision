@@ -60,7 +60,7 @@ public class Thumbnail extends Configured implements Tool
                 int channelCount = metadata.getAsInt("channel_count");
                 int depth =  metadata.getAsInt("depth");
 
-                sourceImage = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                sourceImage = ImageHelper.createIplImageFromRawBytes(value.getBytes(),
                     value.getLength(),
                     width,
                     height,

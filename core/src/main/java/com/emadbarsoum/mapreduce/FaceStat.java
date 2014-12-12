@@ -68,7 +68,7 @@ public class FaceStat extends Configured implements Tool
                     int channelCount = metadata.getAsInt("channel_count");
                     int depth =  metadata.getAsInt("depth");
 
-                    image = ImageHelper.CreateIplImageFromRawBytes(value.getBytes(),
+                    image = ImageHelper.createIplImageFromRawBytes(value.getBytes(),
                         value.getLength(),
                         width,
                         height,
