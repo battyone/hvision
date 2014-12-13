@@ -210,7 +210,7 @@ public class ImageSearchTotalOrder extends Configured implements Tool
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||
             (parser.getNumberOfArgs() < 4) ||
-            !(parser.has(nonOptional)))
+            !parser.has(nonOptional))
         {
             showUsage();
             System.exit(2);

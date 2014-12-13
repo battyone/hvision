@@ -192,7 +192,7 @@ public class FaceStat extends Configured implements Tool
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||
             (parser.getNumberOfArgs() < 3) ||
-            !(parser.has(nonOptional)))
+            !parser.has(nonOptional))
         {
             showUsage();
             System.exit(2);

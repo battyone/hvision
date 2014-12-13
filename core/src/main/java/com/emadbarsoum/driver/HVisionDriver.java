@@ -51,6 +51,10 @@ public final class HVisionDriver
             {
                 com.emadbarsoum.format.ImageSearchResultDump.main(remainingArgs);
             }
+            else if (args[0].equals("bowtrainer"))
+            {
+                com.emadbarsoum.tools.BOWTrainer.main(remainingArgs);
+            }
             // Hadoop tasks
             else
             {

@@ -11,12 +11,12 @@ import static org.bytedeco.javacpp.opencv_core.*;
  */
 public class BOWCluster
 {
-    private TermCriteria termCriteria = new TermCriteria(CV_TERMCRIT_ITER, 10, 0.001);
+    private TermCriteria termCriteria;
     private BOWImgDescriptorExtractor bowDescriptorExtractor;
     private BOWKMeansTrainer bowTrainer;
-    private FeatureDetector featureDetector = FeatureDetector.create("SURF");
-    private DescriptorExtractor descriptorExtractor = DescriptorExtractor.create("SURF");
-    private BFMatcher matcher = new BFMatcher();
+    private FeatureDetector featureDetector;
+    private DescriptorExtractor descriptorExtractor;
+    private BFMatcher matcher;
     private Mat vocabulary;
     private Mat bowDescriptor;
 
@@ -37,6 +37,11 @@ public class BOWCluster
 
     public BOWCluster(int clusterCount)
     {
+        this.termCriteria = new TermCriteria(CV_TERMCRIT_ITER, 10, 0.001);
+        this.featureDetector = FeatureDetector.create("SURF");
+        this.descriptorExtractor = DescriptorExtractor.create("SURF");
+        this.matcher = new BFMatcher();
+
         this.bowTrainer = new BOWKMeansTrainer(clusterCount, this.termCriteria, 1, 2);
         this.bowDescriptorExtractor = new BOWImgDescriptorExtractor(descriptorExtractor, matcher);
     }
@@ -72,18 +77,18 @@ public class BOWCluster
         this.bowTrainer.clear();
     }
 
-    public void Save(String path) throws IllegalStateException
+    public void save(String path) throws IllegalStateException
     {
         if (this.vocabulary == null)
         {
             throw new IllegalStateException("You need to call cluster() before saving the result.");
         }
 
-        ImageHelper.serializeMat(BOWCluster.class.getName(), this.vocabulary, path);
+        ImageHelper.serializeMat("BOWCluster", this.vocabulary, path);
     }
 
-    public void Load(String path)
+    public void load(String path)
     {
-        this.vocabulary = ImageHelper.deserializeMat(BOWCluster.class.getName(), path);
+        this.vocabulary = ImageHelper.deserializeMat("BOWCluster", path);
     }
 }
