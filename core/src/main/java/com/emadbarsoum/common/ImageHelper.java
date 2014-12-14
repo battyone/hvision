@@ -49,4 +49,14 @@ public class ImageHelper
 
         return mat;
     }
+
+    public static MatData matToBytes(Mat mat)
+    {
+        return MatData.create(mat);
+    }
+
+    public static Mat bytesToMat(MatData matData)
+    {
+        return matData.toMat();
+    }
 }

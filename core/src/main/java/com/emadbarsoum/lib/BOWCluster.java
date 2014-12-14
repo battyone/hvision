@@ -37,7 +37,7 @@ public class BOWCluster
 
     public BOWCluster(int clusterCount)
     {
-        this.termCriteria = new TermCriteria(CV_TERMCRIT_ITER, 10, 0.001);
+        this.termCriteria = new TermCriteria(CV_TERMCRIT_ITER, 100, 0.001);
         this.featureDetector = FeatureDetector.create("SURF");
         this.descriptorExtractor = DescriptorExtractor.create("SURF");
         this.matcher = new BFMatcher();
