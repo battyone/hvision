@@ -30,6 +30,7 @@ import java.net.URI;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
+import static org.bytedeco.javacpp.opencv_imgproc.*;
 
 /**
  *
@@ -56,9 +57,11 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
-            BOWCluster bowCluster = new BOWCluster(10);
-            int labelId = metadata.getAsInt("labelid");
+            int labelId = metadata.getAsInt("label_id");
             int labelCount = metadata.getAsInt("label_count");
+            int clusterCount = conf.getInt("cluster_count", labelCount);
+
+            BOWCluster bowCluster = new BOWCluster(clusterCount);
 
             context.setStatus("Status: Metadata parsed");
 
@@ -88,7 +91,12 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
                     context.progress();
                 }
 
-                Mat imageMat = new Mat(image.asCvMat());
+                IplImage grayImage = IplImage.create(image.width(), image.height(), IPL_DEPTH_8U, 1);
+
+                // Convert the input image into a gray image.
+                cvCvtColor(image, grayImage, CV_BGR2GRAY);
+
+                Mat imageMat = new Mat(grayImage.asCvMat());
                 bowCluster.compute(imageMat);
                 MatData matData = MatData.create(bowCluster.getBowDescriptor());
 
@@ -123,6 +131,8 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
 
                         context.write(new IntWritable(i), new TupleWritable(writables));
                     }
+
+                    grayImage.release();
                 }
 
                 context.setStatus("Status: map completed");
@@ -206,6 +216,11 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
         CommandParser parser = new CommandParser(args);
         parser.parse();
 
+        if (parser.has("c"))
+        {
+            conf.set("cluster_count", parser.get("c"));
+        }
+
         Job job = Job.getInstance(conf, "Image Classification BOW Trainer");
         job.setJarByClass(ImageClassificationBOWTrainer.class);
 
@@ -227,7 +242,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
 
         // Use symbolic link "bowClusterFile" to support different platform formats
         // and protocols.
-        job.addCacheFile(new URI(parser.get("c")));
+        job.addCacheFile(new URI(parser.get("cf")));
         // job.addCacheFile(new URI(parser.get("c") + "#bowClusterFile"));
 
         boolean ret = job.waitForCompletion(true);
@@ -239,7 +254,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
         // Needed for SURF feature.
         Loader.load(opencv_nonfree.class);
 
-        String[] nonOptional = {"i", "o", "c"};
+        String[] nonOptional = {"i", "o", "cf"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||
             (parser.getNumberOfArgs() < 3) ||
@@ -254,7 +269,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
 
     private static void showUsage()
     {
-        System.out.println("Usage: hvision icbowtrain -i <input path of the sequence file> -c <BOW cluster file> -o <output path for the result> [-m <hist or surf>]");
+        System.out.println("Usage: hvision icbowtrain -i <input path of the sequence file> -cf <BOW cluster file> -o <output path for the result> [-c <cluster count>]");
     }
 }
 

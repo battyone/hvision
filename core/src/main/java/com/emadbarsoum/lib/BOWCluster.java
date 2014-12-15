@@ -90,5 +90,6 @@ public class BOWCluster
     public void load(String path)
     {
         this.vocabulary = ImageHelper.deserializeMat("BOWCluster", path);
+        this.bowDescriptorExtractor.setVocabulary(this.vocabulary);
     }
 }
