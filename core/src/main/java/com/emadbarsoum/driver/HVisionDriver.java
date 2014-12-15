@@ -73,6 +73,7 @@ public final class HVisionDriver
                 programDriver.addClass("imagesearch", ImageSearch.class, "MapReduce task that performs content based image search using various algorithms.");
                 programDriver.addClass("facestat", FaceStat.class, "MapReduce task that summarize the number of faces per image.");
                 programDriver.addClass("imagesearchtotal", ImageSearchTotalOrder.class, "MapReduce task that performs content based image search using various algorithms. The resulted sequence files can be concatenated.");
+                programDriver.addClass("icbowtrain", ImageClassificationBOWTrainer.class, "MapReduce task that performs BOW training using SVM.");
 
                 // Run the task
                 programDriver.driver(args);

@@ -49,6 +49,14 @@ public class MatData
         return matData;
     }
 
+    public static Mat createMat(byte[] data, int rows, int cols, int type)
+    {
+        Mat mat = new Mat(rows, cols, type);
+        mat.getByteBuffer().put(data);
+
+        return mat;
+    }
+
     public Mat toMat()
     {
         Mat mat = new Mat(this.rows, this.cols, this.type);
