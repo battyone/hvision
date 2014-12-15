@@ -9,7 +9,9 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 
 /**
- * A simple command line tool that convert all images in a given folder into Hadoop sequence file.
+ * A command line tool that convert all images in a given set of folders into Hadoop sequence file.
+ * In such a way, that it treats folder name as the label for the images inside it. The metadata will
+ * be updated with the label and label id.
  *
  * Here the main entry point: com.emadbarsoum.tools.SequenceFileFromLabeledImages
  */

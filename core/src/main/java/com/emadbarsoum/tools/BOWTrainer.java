@@ -62,13 +62,20 @@ public class BOWTrainer
             }
         };
 
-        File[] files = new File(parser.get("i")).listFiles(fileNameFilter);
-        for (File file : files)
+        File[] folders = new File(parser.get("i")).listFiles();
+        for (File folder : folders)
         {
-            if (file.isFile() && !file.isHidden())
+            if (folder.isDirectory() && !folder.isHidden())
             {
-                Mat imageMat = imread(file.getAbsolutePath(), CV_LOAD_IMAGE_GRAYSCALE);
-                bowCluster.add(imageMat);
+                File[] files = new File(parser.get("i") + "/" + folder.getName()).listFiles(fileNameFilter);
+                for (File file : files)
+                {
+                    if (file.isFile() && !file.isHidden())
+                    {
+                        Mat imageMat = imread(file.getAbsolutePath(), CV_LOAD_IMAGE_GRAYSCALE);
+                        bowCluster.add(imageMat);
+                    }
+                }
             }
         }
 
