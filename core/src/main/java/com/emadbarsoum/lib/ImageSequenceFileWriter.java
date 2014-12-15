@@ -37,10 +37,20 @@ public class ImageSequenceFileWriter
 
     public void append(String imageFilePath) throws Exception
     {
-        append(new File(imageFilePath));
+        append(imageFilePath, null);
+    }
+
+    public void append(String imageFilePath, String additionMetadata) throws Exception
+    {
+        append(new File(imageFilePath), additionMetadata);
     }
 
     public void append(File imageFile) throws Exception
+    {
+        append(imageFile, null);
+    }
+
+    public void append(File imageFile, String additionMetadata) throws Exception
     {
         if (this.writer == null)
         {
@@ -88,6 +98,12 @@ public class ImageSequenceFileWriter
             {
                 metadata += ";type=raw" + ";width=" + width + ";height=" + height + ";channel_count=" + channelCount + ";depth=" + depth;
             }
+
+            if ((additionMetadata != null) && !additionMetadata.isEmpty())
+            {
+                metadata += ";" + additionMetadata;
+            }
+
             metadata += ";path=" + imageFile.getAbsolutePath();
 
             writer.append(new Text(metadata), new BytesWritable(fileData));

@@ -55,6 +55,10 @@ public final class HVisionDriver
             {
                 com.emadbarsoum.tools.BOWTrainer.main(remainingArgs);
             }
+            else if (args[0].equals("iseqlab"))
+            {
+                com.emadbarsoum.tools.SequenceFileFromLabeledImages.main(remainingArgs);
+            }
             // Hadoop tasks
             else
             {
