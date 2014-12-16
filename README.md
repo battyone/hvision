@@ -25,6 +25,8 @@ Running HVision
 ---------------
 To run most algorithms from the command line there is a bash script called "hvision" in the bin folder, that takes command as first arguments and the arguments of the command next. So let's run a number of examples:
 
+###Tools
+
 Convert a folder of images into HVision compatible sequence file:
 
     ./bin/hvision iseq -i <image folder path> -o <output sequence file path>
@@ -37,14 +39,55 @@ Create a thumbnails from a database of images stored in a sequence file:
 
     ./bin/hvision thumbnail -i <sequence file path> -o <folder path of the result> -size <thumbnail size in pixel>
 
+Given a folder of images and number of cluster, generate the corresponding BOW cluster XML file.
+
+    hvision bowtrainer -i <input path to folder of images> -o <output path for model file> -c <number of cluster>
+
+Given a folder of labeled images (label is the folder name), generate an HVision sequence file with the label information in the metadata. 
+    
+    hvision iseqlab -i <input path to folder of images> -o <output path for sequence file> [-raw]
+
+###Mappers only jobs
+
 Find faces on a database of images stored in a sequence file:
 
     ./bin/hvision findfaces -i <sequence file path> -o <folder path of the result> -m < model XML path i.e. haarcascade_frontalface_alt.xml>
 
-Blur all images in a database of images stored in a sequence file using Gaussian:
+Blur all images in a database of images stored in a sequence file using Gaussian filter:
 
     ./bin/hvision gaussian -i <sequence file path> -o <folder path of the result> -size <kernel size> -sigma <gaussian sigma>
 
-Blur all images in a database of images stored in a sequence file using Median:
+Blur all images in a database of images stored in a sequence file using Median filter:
 
-    ./bin/hvision gaussian -i <sequence file path> -o <folder path of the result> -size <kernel size>
+    ./bin/hvision median -i <sequence file path> -o <folder path of the result> -size <kernel size>
+
+Convert all images in a sequence file to a gray images:
+
+    ./bin/hvision color2gray -i <input path of the sequence file> -o <output path for sequence file>
+
+Dilate all images in a sequence file
+
+    ./bin/hvision dilate -i <input path of the sequence file> -o <output path for sequence file>
+
+Erode all images in a sequence file
+
+    ./bin/hvision erode -i <input path of the sequence file> -o <output path for sequence file>
+
+###MapReduce jobs
+
+Given an HVision sequence file of images and a query image, sort all the images from most similar to least similar to the query image. Default is using histogram, but you can specify hist for histogram or surf for SURF.
+
+    ./bin/hvision imagesearch -i <input path of the sequence file> -q <query image> -o <output path for the result> [-m <hist or surf>]
+
+Similar to imagesearch but with total sort, so with more than one reducer you can concatenate the multiple sequence files while preserve the global sort.
+
+    ./bin/hvision imagesearchtotal -i <input path of the sequence file> -q <query image> -o <output path for the result> [-m <hist or surf>]
+
+Given an HVision sequence file of images and a model XML file (i.e. haarcascade_frontalface_alt.xml), return the number of images that have 0, 1, 2, 3 or more faces.
+
+    ./bin/hvision facestat -i <input path of the sequence file> -o <output path for sequence file> -m <model path>
+
+Given an HVision sequence file of labeled images and a BOW cluster file, return an SVM model for each label.
+
+    ./bin/hvision icbowtrain -i <input path of the sequence file> -cf <BOW cluster file> -o <output path for the result> [-c <cluster count>]
+
