@@ -5,6 +5,7 @@ import com.emadbarsoum.common.ImageHelper;
 import com.emadbarsoum.common.MatData;
 import com.emadbarsoum.common.MetadataParser;
 import com.emadbarsoum.lib.BOWCluster;
+import com.emadbarsoum.lib.Tuple;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -14,7 +15,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
-import org.apache.hadoop.mapreduce.lib.join.TupleWritable;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.util.Tool;
@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
@@ -45,7 +46,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
 {
     private static final Logger log = LoggerFactory.getLogger(ImageClassificationBOWTrainer.class);
 
-    public static class ImageClassificationBOWTrainerMapper extends Mapper<Text, BytesWritable, IntWritable, TupleWritable>
+    public static class ImageClassificationBOWTrainerMapper extends Mapper<Text, BytesWritable, IntWritable, Tuple>
     {
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
@@ -103,33 +104,29 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
                 context.setStatus("Status: BOW descriptor Computed");
                 context.progress();
 
+                Writable[] writables = new Writable[5];
+
                 for (int i = 0; i < labelCount; ++i)
                 {
                     if (i == labelId)
                     {
-                        Writable[] writables =
-                        {
-                            new BytesWritable(matData.getBytes()),
-                            new IntWritable(matData.rows()),
-                            new IntWritable(matData.cols()),
-                            new IntWritable(matData.type()),
-                            new IntWritable(1)
-                        };
+                        writables[0] = new BytesWritable(matData.getBytes());
+                        writables[1] = new IntWritable(matData.rows());
+                        writables[2] = new IntWritable(matData.cols());
+                        writables[3] = new IntWritable(matData.type());
+                        writables[4] = new IntWritable(1);
 
-                        context.write(new IntWritable(i), new TupleWritable(writables));
+                        context.write(new IntWritable(i), new Tuple(writables));
                     }
                     else
                     {
-                        Writable[] writables =
-                        {
-                            new BytesWritable(matData.getBytes()),
-                            new IntWritable(matData.rows()),
-                            new IntWritable(matData.cols()),
-                            new IntWritable(matData.type()),
-                            new IntWritable(-1)
-                        };
+                        writables[0] = new BytesWritable(matData.getBytes());
+                        writables[1] = new IntWritable(matData.rows());
+                        writables[2] = new IntWritable(matData.cols());
+                        writables[3] = new IntWritable(matData.type());
+                        writables[4] = new IntWritable(-1);
 
-                        context.write(new IntWritable(i), new TupleWritable(writables));
+                        context.write(new IntWritable(i), new Tuple(writables));
                     }
 
                     grayImage.release();
@@ -150,26 +147,15 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
         }
     }
 
-    public static class ImageClassificationBOWTrainerReducer extends Reducer<IntWritable, TupleWritable, Text, Text>
+    public static class ImageClassificationBOWTrainerReducer extends Reducer<IntWritable, Tuple, Text, Text>
     {
         @Override
-        public void reduce(IntWritable key, Iterable<TupleWritable> values, Context context) throws IOException, InterruptedException
+        public void reduce(IntWritable key, Iterable<Tuple> values, Context context) throws IOException, InterruptedException
         {
-            int rowCount = 0;
-            int entryCount = 0;
-
-            for (TupleWritable val : values)
-            {
-                IntWritable rowWritable = (IntWritable)val.get(1);
-                rowCount += rowWritable.get();
-                entryCount++;
-            }
-
             Mat x = new Mat();
-            Mat labels = new Mat(entryCount, 1, CV_32FC1);
+            ArrayList<Integer> labelList = new ArrayList<Integer>();
 
-            int rowIndex = 0;
-            for (TupleWritable val : values)
+            for (Tuple val : values)
             {
                 BytesWritable matWritable = (BytesWritable)val.get(0);
                 int rows = ((IntWritable)val.get(1)).get();
@@ -177,12 +163,20 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
                 int type = ((IntWritable)val.get(3)).get();
                 int target = ((IntWritable)val.get(4)).get();
 
-                Mat m = MatData.createMat(matWritable.getBytes(), rows, cols, type);
+                Mat m = MatData.createMat(matWritable.getBytes(), matWritable.getLength(), rows, cols, type);
 
                 x.push_back(m);
-                labels.col(0).row(rowIndex).put(new Scalar((float)target));
+                labelList.add(target);
 
                 m.release();
+            }
+
+            int rowIndex = 0;
+            Mat labels = new Mat(labelList.size(), 1, CV_32FC1);
+            for (Integer val : labelList)
+            {
+                labels.col(0).row(rowIndex).put(new Scalar(val.floatValue()));
+
                 rowIndex++;
             }
 
@@ -232,7 +226,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
         job.setOutputFormatClass(SequenceFileOutputFormat.class);
 
         job.setMapOutputKeyClass(IntWritable.class);
-        job.setMapOutputValueClass(TupleWritable.class);
+        job.setMapOutputValueClass(Tuple.class);
 
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);

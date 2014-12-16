@@ -1,5 +1,6 @@
 package com.emadbarsoum.common;
 
+import java.util.Arrays;
 import org.bytedeco.javacpp.opencv_core.*;
 
 /**
@@ -47,6 +48,16 @@ public class MatData
         mat.getByteBuffer().get(matData.data);
 
         return matData;
+    }
+
+    public static Mat createMat(byte[] data, int length, int rows, int cols, int type)
+    {
+        byte[] dd = Arrays.copyOfRange(data, 0, length);;
+
+        Mat mat = new Mat(rows, cols, type);
+        mat.getByteBuffer().put(dd);
+
+        return mat;
     }
 
     public static Mat createMat(byte[] data, int rows, int cols, int type)
