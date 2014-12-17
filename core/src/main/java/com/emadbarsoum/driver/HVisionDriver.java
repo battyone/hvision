@@ -59,6 +59,10 @@ public final class HVisionDriver
             {
                 com.emadbarsoum.tools.SequenceFileFromLabeledImages.main(remainingArgs);
             }
+            else if (args[0].equals("svmdump"))
+            {
+                com.emadbarsoum.tools.SVMModelsFromSequenceFile.main(remainingArgs);
+            }
             // Hadoop tasks
             else
             {
