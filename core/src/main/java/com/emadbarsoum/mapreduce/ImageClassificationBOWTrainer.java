@@ -1,9 +1,6 @@
 package com.emadbarsoum.mapreduce;
 
-import com.emadbarsoum.common.CommandParser;
-import com.emadbarsoum.common.ImageHelper;
-import com.emadbarsoum.common.MatData;
-import com.emadbarsoum.common.MetadataParser;
+import com.emadbarsoum.common.*;
 import com.emadbarsoum.lib.BOWCluster;
 import com.emadbarsoum.lib.Tuple;
 import org.apache.hadoop.conf.Configuration;
@@ -27,7 +24,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
@@ -58,6 +59,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
             MetadataParser metadata = new MetadataParser(key.toString());
             metadata.parse();
 
+            String label = metadata.get("label");
             int labelId = metadata.getAsInt("label_id");
             int labelCount = metadata.getAsInt("label_count");
             int clusterCount = conf.getInt("cluster_count", labelCount);
@@ -104,27 +106,33 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
                 context.setStatus("Status: BOW descriptor Computed");
                 context.progress();
 
-                Writable[] writables = new Writable[5];
-
                 for (int i = 0; i < labelCount; ++i)
                 {
                     if (i == labelId)
                     {
-                        writables[0] = new BytesWritable(matData.getBytes());
-                        writables[1] = new IntWritable(matData.rows());
-                        writables[2] = new IntWritable(matData.cols());
-                        writables[3] = new IntWritable(matData.type());
-                        writables[4] = new IntWritable(1);
+                        Writable[] writables =
+                            {
+                                new BytesWritable(matData.getBytes()),
+                                new IntWritable(matData.rows()),
+                                new IntWritable(matData.cols()),
+                                new IntWritable(matData.type()),
+                                new Text(label),
+                                new IntWritable(1)
+                            };
 
                         context.write(new IntWritable(i), new Tuple(writables));
                     }
                     else
                     {
-                        writables[0] = new BytesWritable(matData.getBytes());
-                        writables[1] = new IntWritable(matData.rows());
-                        writables[2] = new IntWritable(matData.cols());
-                        writables[3] = new IntWritable(matData.type());
-                        writables[4] = new IntWritable(-1);
+                        Writable[] writables =
+                            {
+                                new BytesWritable(matData.getBytes()),
+                                new IntWritable(matData.rows()),
+                                new IntWritable(matData.cols()),
+                                new IntWritable(matData.type()),
+                                new Text(""),
+                                new IntWritable(-1)
+                            };
 
                         context.write(new IntWritable(i), new Tuple(writables));
                     }
@@ -155,13 +163,21 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
             Mat x = new Mat();
             ArrayList<Integer> labelList = new ArrayList<Integer>();
 
+            boolean first = true;
+            String label = "";
             for (Tuple val : values)
             {
                 BytesWritable matWritable = (BytesWritable)val.get(0);
                 int rows = ((IntWritable)val.get(1)).get();
                 int cols = ((IntWritable)val.get(2)).get();
                 int type = ((IntWritable)val.get(3)).get();
-                int target = ((IntWritable)val.get(4)).get();
+                int target = ((IntWritable)val.get(5)).get();
+
+                if (first && (target == 1))
+                {
+                    label = val.get(4).toString();
+                    first = false;
+                }
 
                 Mat m = MatData.createMat(matWritable.getBytes(), matWritable.getLength(), rows, cols, type);
 
@@ -185,21 +201,17 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
             CvSVMParams params = new CvSVMParams();
             params.svm_type(CvSVM.C_SVC);
             params.kernel_type(CvSVM.LINEAR);
-            // params.gamma(1.0);
             params.term_crit(criteria.asCvTermCriteria());
 
-            svm.train(x, labels, new Mat(), new Mat(), params);
+            boolean svmRet = svm.train(x, labels, new Mat(), new Mat(), params);
+            if (svmRet)
+            {
+                // Is there a better way then to save it to a temporary file?
+                svm.save(label + ".xml");
 
-            CvMemStorage storage = CvMemStorage.create();
-            CvFileStorage fileStorage = CvFileStorage.open("*.xml", storage, CV_STORAGE_WRITE | CV_STORAGE_MEMORY);
-
-            svm.write(fileStorage, "label_name");
-
-            String svmXml = fileStorage.toString();
-            context.write(new Text(""), new Text(svmXml));
-
-            cvClearMemStorage(storage);
-            cvReleaseFileStorage(fileStorage);
+                String svmXml = Utility.readEntireTextFile(label + ".xml", StandardCharsets.UTF_8);
+                context.write(new Text(label), new Text(svmXml));
+            }
         }
     }
 
@@ -237,7 +249,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
         // Use symbolic link "bowClusterFile" to support different platform formats
         // and protocols.
         job.addCacheFile(new URI(parser.get("cf")));
-        // job.addCacheFile(new URI(parser.get("c") + "#bowClusterFile"));
+        // job.addCacheFile(new URI(parser.get("cf") + "#bowClusterFile"));
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;
