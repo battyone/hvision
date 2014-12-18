@@ -35,6 +35,8 @@ public final class HVisionDriver
 
         try
         {
+            long start = System.currentTimeMillis();
+
             String[] remainingArgs = new String[args.length - 1];
             System.arraycopy(args, 1, remainingArgs, 0, args.length - 1);
 
@@ -86,6 +88,20 @@ public final class HVisionDriver
                 // Run the task
                 programDriver.driver(args);
             }
+
+            long duration = System.currentTimeMillis() - start;
+
+            long durationInSeconds = duration / 1000;
+            long durationInMinutes = durationInSeconds / 60;
+            long durationInHours = durationInMinutes / 60;
+            long durationInDays = durationInHours / 24;
+
+            System.out.format("Time taken: %d days, %d hours, %d minutes, %d seconds.\n",
+                    durationInDays,
+                    durationInHours - 24 * durationInDays,
+                    durationInMinutes - 60 * durationInHours,
+                    durationInSeconds - 60 * durationInMinutes);
+
             exitCode = 0;
         }
         catch (Throwable e)
