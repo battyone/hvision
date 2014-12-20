@@ -59,6 +59,8 @@ public class ImageSearchTotalOrder extends Configured implements Tool
 
             if (method.equals("surf"))
             {
+                Loader.load(opencv_nonfree.class);
+
                 imageSimilarity = new SurfImageSimilarity();
             }
             else
@@ -203,9 +205,6 @@ public class ImageSearchTotalOrder extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
-        // Needed for SURF feature.
-        Loader.load(opencv_nonfree.class);
-
         String[] nonOptional = {"i", "p", "o", "q"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||

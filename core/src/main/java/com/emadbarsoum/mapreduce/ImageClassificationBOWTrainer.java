@@ -25,10 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_highgui.*;
@@ -52,6 +49,9 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
         @Override
         public void map(Text key, BytesWritable value, Context context) throws IOException,InterruptedException
         {
+            // Needed for SURF feature.
+            Loader.load(opencv_nonfree.class);
+
             context.setStatus("Status: map started");
 
             Configuration conf = context.getConfiguration();
@@ -257,9 +257,6 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
 
     public static void main(String[] args) throws Exception
     {
-        // Needed for SURF feature.
-        Loader.load(opencv_nonfree.class);
-
         String[] nonOptional = {"i", "o", "cf"};
         CommandParser parser = new CommandParser(args);
         if (!parser.parse()                ||
