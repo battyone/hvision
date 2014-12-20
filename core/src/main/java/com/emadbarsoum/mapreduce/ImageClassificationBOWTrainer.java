@@ -72,10 +72,9 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
             if (uriPaths.length > 0)
             {
                 boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
-                String bowClusterPath = uriPaths[0].getPath();
                 IplImage image;
 
-                bowCluster.load(bowClusterPath);
+                bowCluster.load("bowClusterFile");
                 context.setStatus("Status: BOW Cluster loaded");
                 context.progress();
 
@@ -248,8 +247,7 @@ public class ImageClassificationBOWTrainer extends Configured implements Tool
 
         // Use symbolic link "bowClusterFile" to support different platform formats
         // and protocols.
-        job.addCacheFile(new URI(parser.get("cf")));
-        // job.addCacheFile(new URI(parser.get("cf") + "#bowClusterFile"));
+        job.addCacheFile(new URI(parser.get("cf") + "#bowClusterFile"));
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;

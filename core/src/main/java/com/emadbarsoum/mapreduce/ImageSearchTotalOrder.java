@@ -77,9 +77,14 @@ public class ImageSearchTotalOrder extends Configured implements Tool
             if (uriPaths.length > 0)
             {
                 boolean isRaw = metadata.has("type") && metadata.get("type").equals("raw");
-                String queryImagePath = uriPaths[0].getPath();
-                IplImage queryImage = cvLoadImage(queryImagePath); //"queryImageFile");
+                IplImage queryImage = cvLoadImage("queryImageFile");
                 IplImage image;
+
+                if (queryImage == null)
+                {
+                    context.setStatus("Status: Loading Query image failed");
+                    throw new NullPointerException();
+                }
 
                 context.setStatus("Status: Query image loaded");
                 context.progress();
@@ -196,8 +201,7 @@ public class ImageSearchTotalOrder extends Configured implements Tool
 
         // Use symbolic link "queryImageFile" to support different platform formats
         // and protocols.
-        job.addCacheFile(new URI(parser.get("q")));
-        // job.addCacheFile(new URI(parser.get("q") + "#queryImageFile"));
+        job.addCacheFile(new URI(parser.get("q") + "#queryImageFile"));
 
         boolean ret = job.waitForCompletion(true);
         return ret ? 0 : 1;
