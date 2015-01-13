@@ -236,3 +236,7 @@ And here how to submit a job through Java API (There are multiple way to submit 
         ToolRunner.run(new Configuration(), new ImageSearch(), args);
     }
 ```
+
+----
+Project lead: Emad Barsoum [ebarsoum `at` gmail.com](mailto:ebarsoum at gmail.com)  
+Discussion group: http://groups.google.com/group/hadoop-vision
